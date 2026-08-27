@@ -3,223 +3,243 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lesson 3 路 鏌ヨ娴佹按绾匡細/chat 鐨勫畬鏁存梾绋?/title>
+<title>Lesson 3 · 查询流水线：/chat 的完整旅程</title>
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
 
-<h1>鏌ヨ娴佹按绾匡細/chat 鐨勫畬鏁存梾绋?/h1>
-<p class="meta" style="font-family:var(--sans);color:var(--muted);font-size:0.9rem;">绗笁璇?路 鏍稿績鏂囦欢锛?code>src/worker.ts</code> 路 <code>src/rag/retriever.ts</code> 路 <code>src/rag/prompt.ts</code> 路 <code>src/providers/llm.ts</code></p>
+<h1>查询流水线：/chat 的完整旅程</h1>
+<p class="meta" style="font-family:var(--sans);color:var(--muted);font-size:0.9rem;">第三课 · 核心文件：<code>src/worker.ts</code> · <code>src/rag/retriever.ts</code> · <code>src/rag/prompt.ts</code> · <code>src/providers/llm.ts</code></p>
 
 <nav class="toc">
-  <strong>鐩綍</strong>
+  <strong>目录</strong>
   <ul>
-    <li><a href="#journey">涓€娆?/chat 璇锋眰鐨勫畬鏁存梾绋?/a></li>
-    <li><a href="#embed">绗竴姝ワ細鎶婇棶棰樺彉鎴愬悜閲?/a></li>
-    <li><a href="#retrieve">绗簩姝ワ細妫€绱?+ 璇█杩囨护锛坮etriever.ts锛?/a></li>
-    <li><a href="#prompt">绗笁姝ワ細缁勮鎻愮ず璇嶏紙prompt.ts锛?/a></li>
-    <li><a href="#llm">绗洓姝ワ細LLM 鐢熸垚鍥炵瓟</a></li>
-    <li><a href="#quiz">娴嬮獙</a></li>
+    <li><a href="#journey">一次 /chat 请求的完整旅程</a></li>
+    <li><a href="#embed">第一步：把问题变成向量</a></li>
+    <li><a href="#retrieve">第二步：检索 + 语言过滤（retriever.ts）</a></li>
+    <li><a href="#prompt">第三步：组装提示词（prompt.ts）</a></li>
+    <li><a href="#llm">第四步：LLM 生成回答</a></li>
+    <li><a href="#quiz">测验</a></li>
   </ul>
 </nav>
 
-<h2 id="journey">涓€娆?/chat 璇锋眰鐨勫畬鏁存梾绋?/h2>
+<h2 id="journey">一次 /chat 请求的完整旅程</h2>
 
-<p>鐢ㄦ埛鍦ㄥ墠绔?widget 杈撳叆涓€鍙ヨ瘽锛屾祻瑙堝櫒鍚?Worker 鍙?<code>POST /chat</code>銆傝繖鏄暣涓郴缁熺殑"蹇冭剰"锛屼竴鍏卞洓姝ワ細</p>
+<p>用户在前端 widget 输入一句话，浏览器向 Worker 发 <code>POST /chat</code>。这是整个系统的"心脏"，一共四步：</p>
 
 <div class="diagram">POST /chat  body: { message, history, language }
 
-   鈶?闂鍚戦噺鍖?        鈶?妫€绱?甯﹁瑷€杩囨护)         鈶?缁勮鎻愮ず璇?          鈶?鐢熸垚鍥炵瓟
-   message 鈹€鈹€embed鈹€鈹€鈻?qv 鈹€鈹€VECTORIZE.query鈹€鈹€鈻?contexts  鈹€鈹€buildPrompt鈹€鈹€鈻?prompt 鈹€鈹€llmGenerate鈹€鈹€鈻?answer
+   ① 问题向量化         ② 检索(带语言过滤)         ③ 组装提示词           ④ 生成回答
+   message ──embed──▶ qv ──VECTORIZE.query──▶ contexts  ──buildPrompt──▶ prompt ──llmGenerate──▶ answer
                                  sources     + sources
-                                                          鈹?                                   鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?                                   鈻?                        杩斿洖 { answer, sources }   鈫?鍓嶇鎶?sources 灞曠ず鎴?鍙傝€冭祫鏂?</div>
+                                                          │
+                                   ┌───────────────────────┘
+                                   ▼
+                        返回 { answer, sources }   ← 前端把 sources 展示成"参考资料"</div>
 
-<p>娉ㄦ剰 <code>worker.ts</code> 閲?/chat 澶勭悊鐨勯鏋讹細</p>
+<p>注意 <code>worker.ts</code> 里 /chat 处理的骨架：</p>
 
-<pre><code>// src/worker.ts 锛堣妭閫夛紝琛?27-72锛?if (req.method === 'POST' && url.pathname === '/chat') {
+<pre><code>// src/worker.ts （节选，行 27-72）
+if (req.method === 'POST' && url.pathname === '/chat') {
   const { message, history = [], language = 'zh' } = await req.json();
 
   const embedder = createEmbedder(env);
 
-  // 鈶?鍙褰撳墠杩欐潯娑堟伅鍋氬悜閲忔绱紙鍘嗗彶涓嶅弬涓庢绱紝閬垮厤骞叉壈锛?  const [qv] = await embedder.embed([message], Number(env.EMBED_DIM));
+  // ① 只对当前这条消息做向量检索（历史不参与检索，避免干扰）
+  const [qv] = await embedder.embed([message], Number(env.EMBED_DIM));
 
-  // 鈶?妫€绱?topK=8锛屽甫璇█杩囨护
+  // ② 检索 topK=8，带语言过滤
   const { contexts, sources } = await getRelevantDocuments(env, qv, 8, language);
 
-  // 鈶?闂 + 妫€绱㈢粨鏋?+ 鍘嗗彶 鎷兼垚鎻愮ず璇?  const prompt = buildPrompt(message, contexts, history, language);
+  // ③ 问题 + 检索结果 + 历史 拼成提示词
+  const prompt = buildPrompt(message, contexts, history, language);
 
-  // 鈶?璋?LLM 鐢熸垚
+  // ④ 调 LLM 生成
   const answer = await llmGenerate(env, prompt);
 
   return new Response(JSON.stringify({ answer, sources }), ...);
 }</code></pre>
 
-<h2 id="embed">绗竴姝ワ細鎶婇棶棰樺彉鎴愬悜閲?/h2>
+<h2 id="embed">第一步：把问题变成向量</h2>
 
-<p>闂鍜屾枃妗?chunk 鐢ㄧ殑鏄?strong>鍚屼竴涓?embedding 妯″瀷銆佸悓涓€涓淮搴?/strong>鈥斺€斿惁鍒欏悜閲忎笉鍦ㄥ悓涓€绌洪棿锛岃窛绂绘病鏈夋剰涔夈€?/p>
+<p>问题和文档 chunk 用的是<strong>同一个 embedding 模型、同一个维度</strong>——否则向量不在同一空间，距离没有意义。</p>
 
 <pre><code>const [qv] = await embedder.embed([message], Number(env.EMBED_DIM));
-// qv 灏辨槸闂鐨勫悜閲忥紝姣斿 [-0.012, 0.087, ..., 0.003] 鍏?1024 涓暟</code></pre>
+// qv 就是问题的向量，比如 [-0.012, 0.087, ..., 0.003] 共 1024 个数</code></pre>
 
-<div class="callout--tip callout"><strong>璁捐缁嗚妭锛氫负浠€涔堝巻鍙蹭笉鍙備笌妫€绱紵</strong>
-浠ｇ爜娉ㄩ噴鍐欏緱寰堟竻妤氾細<em>For vector retrieval, use only the current message to avoid history interference.</em>
-濡傛灉甯︾潃"涓婁竴鏉¤浜嗕粈涔?鍘绘绱紝闂鍚戦噺浼氳鍘嗗彶"姹℃煋"锛屾悳鍑烘潵鐨勫彲鑳戒笉鏄拡瀵瑰綋鍓嶉棶棰樼殑鍐呭銆?鍘嗗彶鐨勫鐞嗘柟寮忔槸锛氬彧杩涙彁绀鸿瘝锛堣绗笁姝ワ級锛屼笉杩涙绱€?/div>
+<div class="callout--tip callout"><strong>设计细节：为什么历史不参与检索？</strong>
+代码注释写得很清楚：<em>For vector retrieval, use only the current message to avoid history interference.</em>
+如果带着"上一条说了什么"去检索，问题向量会被历史"污染"，搜出来的可能不是针对当前问题的内容。
+历史的处理方式是：只进提示词（见第三步），不进检索。</div>
 
-<h2 id="retrieve">绗簩姝ワ細妫€绱?+ 璇█杩囨护锛坮etriever.ts锛?/h2>
+<h2 id="retrieve">第二步：检索 + 语言过滤（retriever.ts）</h2>
 
-<p>杩欐槸鍏ㄩ」鐩渶澶嶆潅鐨勪竴涓枃浠讹紝涔熸槸"澶氳瑷€ RAG"鐨勭簿鍗庛€傛牳蹇冮€昏緫鍒嗕笁灞傦細</p>
+<p>这是全项目最复杂的一个文件，也是"多语言 RAG"的精华。核心逻辑分三层：</p>
 
-<h3>2.1 鍏堝甫璇█杩囨护鏌ヨ锛岃秴鏃?鏃犵粨鏋滃氨鍥為€€</h3>
+<h3>2.1 先带语言过滤查询，超时/无结果就回退</h3>
 
-<pre><code>// 鈶?鍏堝皾璇曞甫 language metadata filter 鐨勬煡璇?const queryWithFilter = env.VECTORIZE.query(qvec, {
+<pre><code>// ① 先尝试带 language metadata filter 的查询
+const queryWithFilter = env.VECTORIZE.query(qvec, {
   topK: k, returnValues: false, returnMetadata: 'all',
-  filter: { metadata: { language: currentLang } }   // 鍙悳褰撳墠璇█鐨勬潯鐩?});
+  filter: { metadata: { language: currentLang } }   // 只搜当前语言的条目
+});
 
-// 鈶?500ms 瓒呮椂淇濇姢
+// ② 500ms 超时保护
 const timeoutPromise = new Promise((_, reject) =>
   setTimeout(() => reject(new Error('Language filter timeout')), 500));
 
 queryRes = await Promise.race([queryWithFilter, timeoutPromise]);
 
-// 鈶?娌＄粨鏋?鈫?鎶涢敊 鈫?璧板洖閫€锛氫笉甯﹁繃婊ゅ啀鏌ヤ竴娆?} catch (error) {
-  queryRes = await env.VECTORIZE.query(qvec, { topK: k, ... });  // 鏃?filter
+// ③ 没结果 → 抛错 → 走回退：不带过滤再查一次
+} catch (error) {
+  queryRes = await env.VECTORIZE.query(qvec, { topK: k, ... });  // 无 filter
 }</code></pre>
 
-<div class="callout"><strong>涓轰粈涔堟湁鍥為€€锛?/strong>
-濡傛灉鏌愪釜璇█鐨勫唴瀹瑰湪搴撻噷鍑犱箮娌℃湁鏉＄洰锛屽甫 filter 鐨勬煡璇㈠彲鑳借繑鍥?0 鏉★紝鐢ㄦ埛灏变粈涔堥兘鎷夸笉鍒般€?鎵€浠ョ瓥鐣ユ槸锛?strong>鍏堢簿纭紙甯﹁繃婊わ級鈫?澶辫触/瓒呮椂 鈫?鍐嶅鏉撅紙涓嶅甫杩囨护锛夆啋 浜嬪悗鍦ㄤ唬鐮侀噷鍐嶈繃婊?/strong>銆?鐢?<code>Promise.race</code> 缁?filter 鏌ヨ鍔?500ms 瓒呮椂锛屾槸闃叉 Vectorize 鐨?metadata filter 鍦ㄦ煇浜涙儏鍐靛彉鎱㈡嫋鍨暣涓姹傘€?/div>
+<div class="callout"><strong>为什么有回退？</strong>
+如果某个语言的内容在库里几乎没有条目，带 filter 的查询可能返回 0 条，用户就什么都拿不到。
+所以策略是：<strong>先精确（带过滤）→ 失败/超时 → 再宽松（不带过滤）→ 事后在代码里再过滤</strong>。
+用 <code>Promise.race</code> 给 filter 查询加 500ms 超时，是防止 Vectorize 的 metadata filter 在某些情况变慢拖垮整个请求。</div>
 
-<h3>2.2 鍥為€€鍚庣殑浜嬪悗璇█杩囨护</h3>
+<h3>2.2 回退后的事后语言过滤</h3>
 
-<p>鍥為€€鏌ヨ鎷垮洖鏉ョ殑鏄贩鍚堣瑷€鐨?topK 缁撴灉锛岄渶瑕佸湪鍐呭瓨閲屽啀绛涗竴閬嶏紙鎸?URL 鏄惁鍚?<code>/en/</code> 鍒ゆ柇锛夛細</p>
+<p>回退查询拿回来的是混合语言的 topK 结果，需要在内存里再筛一遍（按 URL 是否含 <code>/en/</code> 判断）：</p>
 
-<pre><code>// 鑻辨枃鐢ㄦ埛锛氫紭鍏堟壘 /en/ 鍐呭锛屾病鏈夋墠閫€鍥炰腑鏂囷紙URL 绋嶅悗杞崲锛?if (currentLang === 'en') {
+<pre><code>// 英文用户：优先找 /en/ 内容，没有才退回中文（URL 稍后转换）
+if (currentLang === 'en') {
   const englishResults = results.filter(r => r.metadata.url.includes('/en/'));
   return englishResults.length > 0
     ? results.filter(r => r.metadata.url.includes('/en/'))
     : results.filter(r => !r.metadata.url.includes('/en/'));
 }
-// 涓枃鐢ㄦ埛锛氭帓闄?/en/ 鍗冲彲
+// 中文用户：排除 /en/ 即可
 return results.filter(r => !r.metadata.url.includes('/en/'));</code></pre>
 
-<h3>2.3 缁勮涓婁笅鏂囧拰鏉ユ簮</h3>
+<h3>2.3 组装上下文和来源</h3>
 
-<pre><code>// contexts锛氭妸鎵€鏈夊懡涓枃鏈敤鍒嗛殧绗﹁繛鎴愪竴闀夸覆锛屽杩涙彁绀鸿瘝
+<pre><code>// contexts：把所有命中文本用分隔符连成一长串，塞进提示词
 const contexts = metadataResults
   .map(v => v.metadata.text)
   .filter(text => text && text.length > 0)
   .join('\n---\n');
 
-// sources锛氫负姣忎釜鍛戒腑鐢熸垚 { id, url, title, source }锛屽苟鍋?URL 璇█杞崲
-// 锛堜腑鏂囨枃绔犺鑻辨枃鐢ㄦ埛闂埌锛孶RL 鑷姩鎹㈡垚 /en/ 鐗堟湰锛屾爣棰樼敤 titleDictionary 缈昏瘧锛?const sources = ... .map(...).filter(...);
+// sources：为每个命中生成 { id, url, title, source }，并做 URL 语言转换
+// （中文文章被英文用户问到，URL 自动换成 /en/ 版本，标题用 titleDictionary 翻译）
+const sources = ... .map(...).filter(...);
 
-// 鎸?URL 鍘婚噸
+// 按 URL 去重
 const uniqueSources = dedupeByUrl(sources);</code></pre>
 
-<div class="callout--tip callout"><strong>澶氳瑷€鍑哄鐨勫阀鎬?/strong>
-濡傛灉涓€涓嫳鏂囩敤鎴锋悳鍒颁簡涓枃鍐呭锛屼唬鐮佷細鐢?<code>titleDictionary</code>锛堣剼鏈鐢熸垚鐨勪腑鈫掕嫳鏍囬琛級鎶婃爣棰樼炕璇戞垚鑻辨枃锛?骞舵妸 URL 浠?<code>/blog/xxx/</code> 杞垚 <code>/en/blog/xxx/</code>鈥斺€旇鐢ㄦ埛鐐瑰紑鐨勬槸鑻辨枃鐗堟枃绔犮€傝繖鏄?鍐呭娌℃湁鑻辨枃鐗堟椂鐨勪紭闆呴檷绾?銆?/div>
+<div class="callout--tip callout"><strong>多语言出处的巧思</strong>
+如果一个英文用户搜到了中文内容，代码会用 <code>titleDictionary</code>（脚本预生成的中→英标题表）把标题翻译成英文，
+并把 URL 从 <code>/blog/xxx/</code> 转成 <code>/en/blog/xxx/</code>——让用户点开的是英文版文章。这是"内容没有英文版时的优雅降级"。</div>
 
-<h2 id="prompt">绗笁姝ワ細缁勮鎻愮ず璇嶏紙prompt.ts锛?/h2>
+<h2 id="prompt">第三步：组装提示词（prompt.ts）</h2>
 
-<p>鎻愮ず璇?= <strong>瑙掕壊璁惧畾 + 妫€绱㈠埌鐨勪笂涓嬫枃 + 瀵硅瘽鍘嗗彶 + 褰撳墠闂 + 杈撳嚭绾︽潫</strong>锛屾寜璇█锛坺h/en锛夊悇鏈変竴濂楁枃妗堛€?/p>
+<p>提示词 = <strong>角色设定 + 检索到的上下文 + 对话历史 + 当前问题 + 输出约束</strong>，按语言（zh/en）各有一套文案。</p>
 
-<pre><code>// 涓枃鐗堟彁绀鸿瘝缁撴瀯锛堣嫳鏂囩増瀵瑰簲锛夛細
+<pre><code>// 中文版提示词结构（英文版对应）：
 [
-  '浣犳槸涓€鍚?AI 鍔╂墜锛屾搮闀夸簯鍘熺敓鎶€鏈€佹妧鏈啓浣滃拰寮€婧愨€?,   // 瑙掕壊
-  '浣犵殑涓€у拰椋庢牸锛氣€?,                                  // 椋庢牸
-  '鍥炵瓟鎸囧鍘熷垯锛氣€?,                                   // 鍑嗗垯
-  '--- 鍗氬鍐呭 ---',
-  contexts || '锛堢┖锛?,                               // 鈶?妫€绱㈢粨鏋?  '--- 瀵硅瘽鍘嗗彶 ---',                                  // 鈶?鏈€杩?3 杞?  '鐢ㄦ埛: 鈥n鍔╂墜: 鈥?,
-  '--- 闂 ---',
-  question,                                           // 鈶?褰撳墠闂
-  '璇峰熀浜庣煡璇嗗簱鐗囨鎻愪緵绠€娲佽€屾湁閽堝鎬х殑鍥炵瓟鈥?
-  '閲嶈锛氳涓嶈鍦ㄥ洖绛斾腑鍖呭惈浠讳綍鏉ユ簮閾炬帴鈥?              // 鈶?杈撳嚭绾︽潫
+  '你是一名 AI 助手，擅长云原生技术、技术写作和开源…',   // 角色
+  '你的个性和风格：…',                                  // 风格
+  '回答指导原则：…',                                   // 准则
+  '--- 博客内容 ---',
+  contexts || '（空）',                               // ② 检索结果
+  '--- 对话历史 ---',                                  // ③ 最近 3 轮
+  '用户: …\n助手: …',
+  '--- 问题 ---',
+  question,                                           // ④ 当前问题
+  '请基于知识库片段提供简洁而有针对性的回答…'
+  '重要：请不要在回答中包含任何来源链接…'              // ⑤ 输出约束
 ]</code></pre>
 
-<div class="callout"><strong>涓€涓叧閿害鏉燂細鍥炵瓟閲屼笉璁稿甫鏉ユ簮閾炬帴</strong>
-鎻愮ず璇嶆槑纭姹?LLM <em>涓嶈鍦ㄥ洖绛旈噷鍐?URL/璺緞</em>锛屽洜涓?strong>鏉ユ簮鐢辩郴缁熷崟鐙繑鍥?/strong>锛?code>sources</code> 瀛楁锛夛紝
-鍓嶇浼氭妸瀹冩覆鏌撴垚"鍙傝€冭祫鏂?鍒楄〃銆傝繖鏍?LLM 涓嶄細缂栭€犻摼鎺ワ紝鏉ユ簮姘歌繙鏉ヨ嚜鐪熷疄鐨勬绱㈢粨鏋溿€?/div>
+<div class="callout"><strong>一个关键约束：回答里不许带来源链接</strong>
+提示词明确要求 LLM <em>不要在回答里写 URL/路径</em>，因为<strong>来源由系统单独返回</strong>（<code>sources</code> 字段），
+前端会把它渲染成"参考资料"列表。这样 LLM 不会编造链接，来源永远来自真实的检索结果。</div>
 
-<h2 id="llm">绗洓姝ワ細LLM 鐢熸垚鍥炵瓟</h2>
+<h2 id="llm">第四步：LLM 生成回答</h2>
 
-<p><code>llmGenerate</code> 鍜?embedding 涓€鏍锋敮鎸?Gemini / Qwen 鍙?provider锛?/p>
+<p><code>llmGenerate</code> 和 embedding 一样支持 Gemini / Qwen 双 provider：</p>
 
-<pre><code>// Gemini锛歡enerateContent锛屽崟杞枃鏈?POST https://generativelanguage.googleapis.com/...:generateContent
+<pre><code>// Gemini：generateContent，单轮文本
+POST https://generativelanguage.googleapis.com/...:generateContent
 body: { contents: [{ parts: [{ text: prompt }] }] }
-鈫?j.candidates[0].content.parts.map(p => p.text).join('')
+→ j.candidates[0].content.parts.map(p => p.text).join('')
 
-// Qwen锛歝hat/completions锛圤penAI 鍏煎鏍煎紡锛?POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
+// Qwen：chat/completions（OpenAI 兼容格式）
+POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
 body: { model: 'qwen-plus', messages: [{role:'system',...},{role:'user',content:prompt}] }
-鈫?j.choices[0].message.content</code></pre>
+→ j.choices[0].message.content</code></pre>
 
-<p>娉ㄦ剰 Qwen 鐢ㄧ殑鏄?OpenAI 鍏煎鐨?<code>/chat/completions</code>锛岃€?Gemini 鐢ㄨ嚜瀹剁殑 <code>/generateContent</code>鈥斺€旀帴鍙ｅ舰鎬佷笉鍚岋紝浣嗛兘琚繖涓枃浠剁粺涓€鎴愪簡鍚屼竴涓?<code>llmGenerate(env, prompt): string</code> 绛惧悕銆傝繖灏辨槸"鎶借薄"锛氫笂灞?/chat 鏍规湰涓嶅叧蹇冭儗鍚庢槸鍝釜妯″瀷銆?/p>
+<p>注意 Qwen 用的是 OpenAI 兼容的 <code>/chat/completions</code>，而 Gemini 用自家的 <code>/generateContent</code>——接口形态不同，但都被这个文件统一成了同一个 <code>llmGenerate(env, prompt): string</code> 签名。这就是"抽象"：上层 /chat 根本不关心背后是哪个模型。</p>
 
-<div class="callout--tip callout"><strong>涓轰粈涔?/chat 涓嶅甫閴存潈鑰?/admin/* 甯︼紵</strong>
-<code>/admin/upsert</code>銆?code>/admin/delete</code> 绛変細鏀瑰姩鐭ヨ瘑搴擄紝蹇呴』鐢?<code>ADMIN_TOKEN</code> 淇濇姢锛?<code>/chat</code> 鏄叕寮€鍙鎺ュ彛锛堣皝閮借兘闂級锛屾墍浠ョ洿鎺ュ紑鏀撅紝闈?CORS 澶撮檺鍒舵祻瑙堝櫒鏉ユ簮銆?/div>
+<div class="callout--tip callout"><strong>为什么 /chat 不带鉴权而 /admin/* 带？</strong>
+<code>/admin/upsert</code>、<code>/admin/delete</code> 等会改动知识库，必须用 <code>ADMIN_TOKEN</code> 保护；
+<code>/chat</code> 是公开只读接口（谁都能问），所以直接开放，靠 CORS 头限制浏览器来源。</div>
 
-<h2 id="quiz">娴嬮獙</h2>
+<h2 id="quiz">测验</h2>
 
 <div class="quiz" id="quiz3">
-<h3>娴嬮獙 路 鏌ヨ娴佹按绾?/h3>
-<p style="font-size:0.85rem;color:var(--muted);">姣忛鐐归€夌瓟妗堬紝浼氱珛鍒诲憡璇変綘瀵归敊骞剁粰鍑鸿В閲娿€?/p>
+<h3>测验 · 查询流水线</h3>
+<p style="font-size:0.85rem;color:var(--muted);">每题点选答案，会立刻告诉你对错并给出解释。</p>
 
-<div class="q">1. 妫€绱㈡椂涓轰粈涔堝彧鐢ㄥ綋鍓嶈繖鏉℃秷鎭€佷笉鐢ㄥ璇濆巻鍙诧紵</div>
+<div class="q">1. 检索时为什么只用当前这条消息、不用对话历史？</div>
 <div class="options">
-  <button class="opt" data-correct="false" data-explain="鍘嗗彶浼氳繘鍏ユ彁绀鸿瘝锛屼絾涓嶆槸鐢ㄤ簬妫€绱€?>鍥犱负瀵硅瘽鍘嗗彶娌℃湁鍚戦噺</button>
-  <button class="opt" data-correct="true" data-explain="鍘嗗彶浼氭薄鏌撻棶棰樺悜閲忥紝瀵艰嚧妫€绱㈢粨鏋滃亸绂诲綋鍓嶉棶棰橈紱鍘嗗彶鍙繘鎻愮ず璇嶃€?>閬垮厤鍘嗗彶姹℃煋妫€绱紝鍘嗗彶鍙繘鎻愮ず璇?/button>
-  <button class="opt" data-correct="false" data-explain="妫€绱㈠彧鐢ㄥ綋鍓嶆秷鎭紝杩欐槸鏈夋剰鐨勮璁°€?>鍥犱负鍘嗗彶瀛樺湪鍙︿竴涓暟鎹簱</button>
-  <button class="opt" data-correct="false" data-explain="寮曟搸娌℃湁杩欎釜闄愬埗锛屾槸璁捐閫夋嫨銆?>鍥犱负 Vectorize 涓嶆敮鎸佸鏉℃煡璇?/button>
+  <button class="opt" data-correct="false" data-explain="历史会进入提示词，但不是用于检索。">因为对话历史没有向量</button>
+  <button class="opt" data-correct="true" data-explain="历史会污染问题向量，导致检索结果偏离当前问题；历史只进提示词。">避免历史污染检索，历史只进提示词</button>
+  <button class="opt" data-correct="false" data-explain="检索只用当前消息，这是有意的设计。">因为历史存在另一个数据库</button>
+  <button class="opt" data-correct="false" data-explain="引擎没有这个限制，是设计选择。">因为 Vectorize 不支持多条查询</button>
 </div>
 <div class="feedback"><span class="verdict"></span><span class="detail"></span></div>
 
-<div class="q">2. 甯﹁瑷€杩囨护鐨勬绱㈣秴鏃舵垨杩斿洖绌烘椂锛屼唬鐮佹€庝箞鍔烇紵</div>
+<div class="q">2. 带语言过滤的检索超时或返回空时，代码怎么办？</div>
 <div class="options">
-  <button class="opt" data-correct="false" data-explain="姝ｇ浉鍙嶏細浼氬厛鎶涢敊鍐嶅洖閫€銆?>鐩存帴缁欑敤鎴疯繑鍥?鎵句笉鍒拌祫鏂?</button>
-  <button class="opt" data-correct="false" data-explain="涓嶄細閲嶈瘯鍚屼竴鏌ヨ锛岃€屾槸鍘绘帀杩囨护鍐嶆煡銆?>鍘熷湴閲嶈瘯鍚屼竴鏉″甫杩囨护鐨勬煡璇?/button>
-  <button class="opt" data-correct="true" data-explain="Promise.race 500ms 瓒呮椂鎴栫┖缁撴灉閮戒細瑙﹀彂鍥為€€锛氬幓鎺?filter 鍐嶆煡锛屼簨鍚庡湪鍐呭瓨杩囨护銆?>鍥為€€鍒颁笉甯﹁繃婊ょ殑鏌ヨ锛屼簨鍚庡唴瀛樿繃婊?/button>
-  <button class="opt" data-correct="false" data-explain="瓒呮椂涓嶄細缁х画绛夛紝鑰屾槸绔嬪嵆鍥為€€銆?>缁х画绛夊緟鐩村埌鏈夌粨鏋滀负姝?/button>
+  <button class="opt" data-correct="false" data-explain="正相反：会先抛错再回退。">直接给用户返回"找不到资料"</button>
+  <button class="opt" data-correct="false" data-explain="不会重试同一查询，而是去掉过滤再查。">原地重试同一条带过滤的查询</button>
+  <button class="opt" data-correct="true" data-explain="Promise.race 500ms 超时或空结果都会触发回退：去掉 filter 再查，事后在内存过滤。">回退到不带过滤的查询，事后内存过滤</button>
+  <button class="opt" data-correct="false" data-explain="超时不会继续等，而是立即回退。">继续等待直到有结果为止</button>
 </div>
 <div class="feedback"><span class="verdict"></span><span class="detail"></span></div>
 
-<div class="q">3. sources锛堝弬鑰冭祫鏂欙級鏄€庝箞鏉ョ殑锛?/div>
+<div class="q">3. sources（参考资料）是怎么来的？</div>
 <div class="options">
-  <button class="opt" data-correct="false" data-explain="姝ｅソ鐩稿弽锛氭彁绀鸿瘝瑕佹眰 LLM 涓嶈鍐欓摼鎺ャ€?>鐢?LLM 鍦ㄥ洖绛旀湯灏捐嚜鍔ㄧ敓鎴?/button>
-  <button class="opt" data-correct="true" data-explain="鏉ユ簮鏉ヨ嚜妫€绱㈠懡涓殑 metadata锛坲rl/title/source锛夛紝鐢辩郴缁熻繑鍥烇紝涓嶇粡杩?LLM銆?>浠庢绱㈠懡涓殑 metadata 鏋勯€犲苟杩斿洖</button>
-  <button class="opt" data-correct="false" data-explain="ingest 闃舵灏卞瓨浜?url/title 鍦?metadata 閲岋紝涓嶆槸 /chat 鏂扮畻鐨勩€?>鍓嶇鏍规嵁鍥炵瓟鍐呭鐜扮寽 URL</button>
-  <button class="opt" data-correct="false" data-explain="鏉ユ簮纭疄鍜屾绱㈢粨鏋滅粦瀹氾紝浣嗗畠鏄?metadata锛屼笉鏄尮閰嶇殑 id銆?>鏄绱㈠懡涓殑 id 鍒楄〃锛屾病鏈夋爣棰?/button>
+  <button class="opt" data-correct="false" data-explain="正好相反：提示词要求 LLM 不要写链接。">由 LLM 在回答末尾自动生成</button>
+  <button class="opt" data-correct="true" data-explain="来源来自检索命中的 metadata（url/title/source），由系统返回，不经过 LLM。">从检索命中的 metadata 构造并返回</button>
+  <button class="opt" data-correct="false" data-explain="ingest 阶段就存了 url/title 在 metadata 里，不是 /chat 新算的。">前端根据回答内容现猜 URL</button>
+  <button class="opt" data-correct="false" data-explain="来源确实和检索结果绑定，但它是 metadata，不是匹配的 id。">是检索命中的 id 列表，没有标题</button>
 </div>
 <div class="feedback"><span class="verdict"></span><span class="detail"></span></div>
 
-<div class="q">4. 鑻辨枃鐢ㄦ埛闂埌鍙湁涓枃鐨勬枃绔犳椂锛屼唬鐮佷細鍋氫粈涔堬紵</div>
+<div class="q">4. 英文用户问到只有中文的文章时，代码会做什么？</div>
 <div class="options">
-  <button class="opt" data-correct="false" data-explain="鎭版伆鐩稿弽锛氭湁闄嶇骇绛栫暐锛屼笉鏄洿鎺ユ斁寮冦€?>鐩存帴涓㈠純璇ョ粨鏋滐紝涓嶇粰浠讳綍鏉ユ簮</button>
-  <button class="opt" data-correct="true" data-explain="鐢?titleDictionary 缈昏瘧鏍囬锛屽苟鎶?URL 杞垚 /en/ 鐗堟湰锛岃鐢ㄦ埛鐪嬪埌鑻辨枃鐗堥〉闈€?>缈昏瘧鏍囬骞惰浆鎹?URL 涓?/en/ 鐗堟湰</button>
-  <button class="opt" data-correct="false" data-explain="涓嶄細鐜板満缈昏瘧鍏ㄦ枃锛屽彧澶勭悊鏍囬鍜?URL銆?>鐜板満璋冪敤缈昏瘧 API 鎶婃暣绡囨枃绔犺瘧鎴愯嫳鏂?/button>
-  <button class="opt" data-correct="false" data-explain="涓嶉噸鏂版憚鍏ワ紝鐢ㄧ幇鎴愬瓧鍏稿鐞嗐€?>閲嶆柊鎽勫叆涓€绡囪嫳鏂囩増鍐嶆绱?/button>
+  <button class="opt" data-correct="false" data-explain="恰恰相反：有降级策略，不是直接放弃。">直接丢弃该结果，不给任何来源</button>
+  <button class="opt" data-correct="true" data-explain="用 titleDictionary 翻译标题，并把 URL 转成 /en/ 版本，让用户看到英文版页面。">翻译标题并转换 URL 为 /en/ 版本</button>
+  <button class="opt" data-correct="false" data-explain="不会现场翻译全文，只处理标题和 URL。">现场调用翻译 API 把整篇文章译成英文</button>
+  <button class="opt" data-correct="false" data-explain="不重新摄入，用现成字典处理。">重新摄入一篇英文版再检索</button>
 </div>
 <div class="feedback"><span class="verdict"></span><span class="detail"></span></div>
 
-<div class="q">5. 涓轰粈涔?/chat 鍏紑鑰?/admin/* 瑕侀壌鏉冿紵</div>
+<div class="q">5. 为什么 /chat 公开而 /admin/* 要鉴权？</div>
 <div class="options">
-  <button class="opt" data-correct="false" data-explain="/chat 纭疄鏄叕寮€鐨勶紝浣?admin 闇€瑕佷繚鎶ゃ€?>涓よ€呴兘鏄叕寮€鐨勶紝闈?CORS 闃叉互鐢?/button>
-  <button class="opt" data-correct="true" data-explain="/chat 鏄彧璇诲叕寮€鎺ュ彛锛沘dmin 浼氭敼鍔ㄧ煡璇嗗簱锛屽繀椤荤敤 ADMIN_TOKEN 淇濇姢銆?>/chat 鍙鍏紑锛?admin/* 鏀瑰姩搴撻』閴存潈</button>
-  <button class="opt" data-correct="false" data-explain="鐩稿弽锛?chat 鍐呴儴涔熻浼?token銆?>/chat 涔熻浼?ADMIN_TOKEN 鎵嶈兘鐢?/button>
-  <button class="opt" data-correct="false" data-explain="admin 閴存潈鐢ㄧ殑鏄?Bearer ADMIN_TOKEN锛屼笉鏄?API key銆?>admin 鐢?API key 鑰岄潪 Bearer 澶撮壌鏉?/button>
+  <button class="opt" data-correct="false" data-explain="/chat 确实是公开的，但 admin 需要保护。">两者都是公开的，靠 CORS 防滥用</button>
+  <button class="opt" data-correct="true" data-explain="/chat 是只读公开接口；admin 会改动知识库，必须用 ADMIN_TOKEN 保护。">/chat 只读公开；/admin/* 改动库须鉴权</button>
+  <button class="opt" data-correct="false" data-explain="相反，/chat 内部也要传 token。">/chat 也要传 ADMIN_TOKEN 才能用</button>
+  <button class="opt" data-correct="false" data-explain="admin 鉴权用的是 Bearer ADMIN_TOKEN，不是 API key。">admin 用 API key 而非 Bearer 头鉴权</button>
 </div>
 <div class="feedback"><span class="verdict"></span><span class="detail"></span></div>
 </div>
 
-<h3>鏈灏忕粨</h3>
+<h3>本课小结</h3>
 <ul>
-  <li>/chat 鍥涙锛?strong>闂鍚戦噺鍖?鈫?妫€绱?璇█杩囨护 鈫?缁勮鎻愮ず璇?鈫?LLM 鐢熸垚</strong></li>
-  <li>妫€绱㈢瓥鐣ワ細鍏堝甫 language filter锛屽け璐?瓒呮椂锛?00ms锛夊垯鍥為€€鏃犺繃婊ゆ煡璇?+ 鍐呭瓨浜嬪悗杩囨护</li>
-  <li>鎻愮ず璇嶅寘鍚細瑙掕壊 + 涓婁笅鏂?+ 鍘嗗彶 + 闂 + "涓嶈鍐欐潵婧?绾︽潫锛涙潵婧愮敱绯荤粺鍗曠嫭杩斿洖</li>
-  <li>澶氳瑷€闄嶇骇锛歵itleDictionary 缈昏瘧鏍囬 + URL 杞?/en/锛岃涓枃鍐呭瀵硅嫳鏂囩敤鎴蜂粛鍙敤</li>
+  <li>/chat 四步：<strong>问题向量化 → 检索+语言过滤 → 组装提示词 → LLM 生成</strong></li>
+  <li>检索策略：先带 language filter，失败/超时（500ms）则回退无过滤查询 + 内存事后过滤</li>
+  <li>提示词包含：角色 + 上下文 + 历史 + 问题 + "不许写来源"约束；来源由系统单独返回</li>
+  <li>多语言降级：titleDictionary 翻译标题 + URL 转 /en/，让中文内容对英文用户仍可用</li>
 </ul>
 
 <footer>
-  <p><strong>鎺ㄨ崘闃呰锛?/strong><a href="https://developers.cloudflare.com/vectorize/reference/metadata-filtering/">Vectorize metadata filtering</a> 鈥斺€?retriever 璇█杩囨护鐨勫畼鏂逛緷鎹€?/p>
-  <p><strong>缁х画瀛︿範锛?/strong>鏈涓庨€熸煡瑙?<a href="../reference/001-rag-glossary.html">RAG 閫熸煡琛?/a>锛涘洖鍒?<a href="0001-rag-pipeline-overview.html">绗竴璇?/a> 澶嶄範鍏ㄦ祦绋嬨€?/p>
-  <p>鏈変换浣曚笉娓呮鐨勫湴鏂癸紝闅忔椂闂綘鐨?AI 鑰佸笀銆?/p>
+  <p><strong>推荐阅读：</strong><a href="https://developers.cloudflare.com/vectorize/reference/metadata-filtering/">Vectorize metadata filtering</a> —— retriever 语言过滤的官方依据。</p>
+  <p><strong>继续学习：</strong>术语与速查见 <a href="../reference/001-rag-glossary.html">RAG 速查表</a>；回到 <a href="0001-rag-pipeline-overview.html">第一课</a> 复习全流程。</p>
+  <p>有任何不清楚的地方，随时问你的 AI 老师。</p>
 </footer>
 
 <script>
@@ -237,7 +257,7 @@ document.querySelectorAll('.quiz').forEach(quiz => {
         opt.classList.add(isCorrect ? 'correct' : 'wrong');
         opt.disabled = true;
         options.querySelectorAll('.opt').forEach(o => { if (o !== opt) o.disabled = true; });
-        verdict.textContent = isCorrect ? '鉁?姝ｇ‘锛? : '鉂?涓嶅銆?;
+        verdict.textContent = isCorrect ? '✅ 正确！' : '❌ 不对。';
         verdict.style.color = isCorrect ? '#166534' : '#b91c1c';
         detail.textContent = ' ' + opt.dataset.explain;
         feedback.classList.add('show');
