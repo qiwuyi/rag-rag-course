@@ -1,0 +1,281 @@
+/* Shared lesson stylesheet for the RAG teaching workspace.
+   Tufte-inspired: clean, readable, prints well. */
+
+:root {
+  --ink: #1a1a1a;
+  --paper: #fffff8;
+  --accent: #2563eb;
+  --accent-soft: #dbeafe;
+  --muted: #6b7280;
+  --rule: #e5e7eb;
+  --code-bg: #f6f8fa;
+  --quiz-bg: #f0fdf4;
+  --quiz-border: #86efac;
+  --callout-bg: #fffbeb;
+  --callout-border: #fcd34d;
+  --serif: "Georgia", "Times New Roman", "Songti SC", "Noto Serif SC", serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --mono: "SF Mono", "Cascadia Code", Consolas, "Menlo", monospace;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0 auto;
+  max-width: 46rem;
+  padding: 2.5rem 1.5rem 4rem;
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--ink);
+  background: var(--paper);
+  text-rendering: optimizeLegibility;
+}
+
+@media (max-width: 600px) {
+  body { padding: 1.25rem 1rem 3rem; font-size: 16px; }
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--sans);
+  line-height: 1.25;
+  margin-top: 2.2em;
+  margin-bottom: 0.5em;
+  font-weight: 700;
+}
+
+h1 {
+  font-size: 2rem;
+  margin-top: 0;
+  padding-bottom: 0.4em;
+  border-bottom: 3px solid var(--ink);
+}
+
+h2 {
+  font-size: 1.4rem;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 0.25em;
+}
+
+h3 { font-size: 1.12rem; }
+
+p { margin: 0.8em 0; }
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+ul, ol { padding-left: 1.4em; }
+li { margin: 0.35em 0; }
+
+code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  background: var(--code-bg);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+
+pre {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  line-height: 1.55;
+  background: var(--code-bg);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 1em 1.2em;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+pre code { background: none; padding: 0; }
+
+/* Table of contents */
+.toc {
+  font-family: var(--sans);
+  font-size: 0.92rem;
+  background: var(--code-bg);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 1rem 1.4rem;
+  margin: 1.5em 0;
+}
+.toc ul { margin: 0.3em 0; }
+
+/* Callouts */
+.callout {
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  background: var(--callout-bg);
+  border-left: 4px solid var(--callout-border);
+  padding: 0.8rem 1.1rem;
+  border-radius: 0 8px 8px 0;
+  margin: 1.2em 0;
+}
+.callout strong:first-child { color: #b45309; }
+
+.callout--tip { background: #ecfeff; border-left-color: #22d3ee; }
+.callout--tip strong:first-child { color: #0e7490; }
+
+/* Diagrams (HTML-based, per skill instructions) */
+.diagram {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  background: #f8fafc;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 1em 1.2em;
+  overflow-x: auto;
+  line-height: 1.7;
+  white-space: pre;
+}
+
+/* Quiz */
+.quiz {
+  font-family: var(--sans);
+  background: var(--quiz-bg);
+  border: 1px solid var(--quiz-border);
+  border-radius: 10px;
+  padding: 1.2rem 1.4rem;
+  margin: 1.6em 0;
+}
+.quiz h3 {
+  margin-top: 0;
+  font-size: 1rem;
+  color: #166534;
+}
+.quiz .q {
+  margin: 1em 0;
+  font-size: 0.96rem;
+  font-weight: 600;
+}
+.quiz .options { display: grid; gap: 0.5em; margin: 0.5em 0; }
+.quiz button.opt {
+  text-align: left;
+  font-family: var(--sans);
+  font-size: 0.92rem;
+  padding: 0.55em 0.9em;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.quiz button.opt:hover { border-color: var(--accent); }
+.quiz button.opt.correct {
+  background: #dcfce7;
+  border-color: #22c55e;
+  color: #14532d;
+}
+.quiz button.opt.wrong {
+  background: #fee2e2;
+  border-color: #ef4444;
+  color: #7f1d1d;
+}
+.quiz .feedback {
+  margin-top: 0.5em;
+  font-size: 0.9rem;
+  color: #374151;
+  display: none;
+}
+.quiz .feedback.show { display: block; }
+.quiz .feedback .verdict { font-weight: 700; }
+
+/* Footer */
+footer {
+  margin-top: 3em;
+  padding-top: 1em;
+  border-top: 1px solid var(--rule);
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* ============ Sidebar ============ */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 232px;
+  height: 100vh;
+  height: 100dvh;
+  background: #f8fafc;
+  border-right: 1px solid var(--rule);
+  padding: 1.3rem 0.9rem;
+  font-family: var(--sans);
+  overflow-y: auto;
+  z-index: 1000;
+}
+.sidebar .brand { font-weight: 700; font-size: 1.02rem; margin-bottom: 0.15rem; }
+.sidebar .sub { font-size: 0.78rem; color: var(--muted); margin-bottom: 0.9rem; }
+.sidebar .progress-bar {
+  height: 7px;
+  background: var(--rule);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.3rem;
+}
+.sidebar .progress-bar .fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  transition: width 0.3s;
+}
+.sidebar .progress-label { font-size: 0.78rem; color: var(--muted); margin-bottom: 0.8rem; }
+.sidebar a.item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55em 0.7em;
+  border-radius: 8px;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 0.88rem;
+  margin-bottom: 0.3rem;
+  border: 1px solid transparent;
+}
+.sidebar a.item:hover { background: #eef2ff; text-decoration: none; }
+.sidebar a.item.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.sidebar a.item .tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent);
+  border-radius: 999px;
+  width: 1.45rem;
+  height: 1.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.sidebar a.item .tag.ref { background: #7c3aed; }
+.sidebar a.item .lbl { flex: 1; }
+.sidebar a.item .check { margin-left: auto; color: #16a34a; font-weight: 700; }
+
+body.has-sidebar { margin-left: 232px; }
+
+@media (max-width: 900px) {
+  .sidebar {
+    position: static;
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--rule);
+    padding: 0.8rem 1rem;
+  }
+  .sidebar .progress-label, .sidebar .progress-bar { display: inline-block; margin-right: 0.6rem; }
+  .sidebar a.item { display: inline-flex; margin-right: 0.3rem; }
+  body.has-sidebar { margin-left: 0; }
+}
+
+@media print {
+  body { max-width: 100%; font-size: 12pt; }
+  pre { white-space: pre-wrap; }
+  .sidebar { display: none; }
+  body.has-sidebar { margin-left: 0; }
+}
