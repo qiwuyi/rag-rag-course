@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG 鍘熺悊璇剧▼ 路 rag-chatbot-fork</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .card {
+    display: block;
+    font-family: var(--sans);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 1.1rem 1.3rem;
+    margin: 0.9em 0;
+    text-decoration: none;
+    color: var(--ink);
+    background: #fff;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+  }
+  .card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 4px 16px rgba(37,99,235,0.12);
+    transform: translateY(-1px);
+    text-decoration: none;
+  }
+  .card .num {
+    display: inline-block;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #fff;
+    background: var(--accent);
+    border-radius: 999px;
+    padding: 0.15em 0.7em;
+    margin-right: 0.5em;
+    vertical-align: middle;
+  }
+  .card .num.ref { background: #7c3aed; }
+  .card h3 { margin: 0.25em 0 0.35em; font-size: 1.08rem; }
+  .card p { margin: 0; font-size: 0.9rem; color: var(--muted); line-height: 1.5; }
+  .progress {
+    font-family: var(--sans);
+    font-size: 0.85rem;
+    color: var(--muted);
+    background: var(--code-bg);
+    border-radius: 8px;
+    padding: 0.6em 1em;
+    margin: 1.2em 0;
+  }
+  .progress b { color: var(--ink); }
+  ol.roadmap { font-family: var(--sans); font-size: 0.92rem; padding-left: 1.4em; }
+  ol.roadmap li { margin: 0.4em 0; }
+</style>
+</head>
+<body>
+
+<h1>RAG 鍘熺悊璇剧▼</h1>
+<p class="meta" style="font-family:var(--sans);color:var(--muted);font-size:0.95rem;">
+  鏁欏妗堜緥锛?code>rag-chatbot-fork</code>锛圕loudflare Workers 涓枃 RAG 鑱婂ぉ鏈哄櫒浜猴級
+</p>
+
+<div class="callout">
+  <strong>瀛︿範璺緞</strong>
+  寤鸿鎸?鈶?鈫?鈶?鈫?鈶?椤哄簭瀛︿範锛屾瘡璇?5-10 鍒嗛挓锛屽仛瀹屾湯灏剧殑浜や簰娴嬮獙鍐嶈繘涓嬩竴璇俱€?  閬囧埌涓嶆噦鐨勬湳璇紝闅忔椂缈?<strong>閫熸煡琛?/strong>銆?</div>
+
+<div class="progress">馃摉 鏈绋嬪叡 <b>3</b> 鑺傝 + <b>1</b> 浠介€熸煡琛?路 鍏ㄩ儴涓轰氦浜掑紡 HTML</div>
+
+<h2>璇剧▼</h2>
+
+<a class="card" href="lessons/0001-rag-pipeline-overview.html">
+  <span class="num">鈶?/span> 绗竴璇?路 RAG 鍏ㄦ祦绋嬫瑙?  <h3>澶у浘鏅細涓€涓?RAG 绯荤粺鍦ㄥ仛浠€涔?/h3>
+  <p>涓ゆ潯娴佹按绾匡紙鎽勫叆 vs 鏌ヨ锛夈€佷负浠€涔堢敤鍚戦噺銆佸畬鏁翠唬鐮佸湴鍥撅紙鏂囦欢 鈫?闃舵锛夈€傞€傚悎鍏堝缓绔嬪叏灞€瑙傘€?/p>
+</a>
+
+<a class="card" href="lessons/0002-ingestion-pipeline.html">
+  <span class="num">鈶?/span> 绗簩璇?路 鎽勫叆娴佹按绾?  <h3>浠?Markdown 鍒板悜閲忓簱</h3>
+  <p>Markdown鈫掔函鏂囨湰鈫掍腑鏂囧弸濂藉垏 chunk鈫掑悜閲忓寲鈫掑啓鍏ョ储寮曪紱Gemini/Qwen 宸紓锛涜秴蹇憚鍏ョ殑骞跺彂璁捐銆?/p>
+</a>
+
+<a class="card" href="lessons/0003-retrieval-generation.html">
+  <span class="num">鈶?/span> 绗笁璇?路 鏌ヨ娴佹按绾?  <h3>/chat 鐨勫畬鏁存梾绋?/h3>
+  <p>闂鍚戦噺鍖栤啋甯﹁瑷€杩囨护鐨勬绱?鍥為€€鈫掓彁绀鸿瘝缁勮鈫扡LM 鐢熸垚锛涘璇█鍑哄鐨勪紭闆呴檷绾с€?/p>
+</a>
+
+<h2>閫熸煡</h2>
+
+<a class="card" href="reference/001-rag-glossary.html">
+  <span class="num ref">R</span> RAG 閫熸煡琛?  <h3>鏈琛?路 浠ｇ爜鍦板浘 路 绔偣 路 閰嶇疆 路 鍛戒护</h3>
+  <p>涓€椤垫煡瀹岋細Glossary銆佹瘡涓枃浠剁殑鑱岃矗銆丠TTP 绔偣銆佺幆澧冨彉閲忋€佸父鐢ㄥ懡浠ゃ€傛墦鍗板弸濂斤紝闅忔椂鍥炵炕銆?/p>
+</a>
+
+<h2>瀛︿範寤鸿</h2>
+<ol class="roadmap">
+  <li>姣忚鍏堣姝ｆ枃锛岄亣鍒颁唬鐮佸氨瀵圭収浠撳簱 <code>D:\ds\rag-chatbot-fork\src</code> 閲岀殑鐪熷疄鏂囦欢鐪?/li>
+  <li>鍋氬畬 5 閬撴祴楠岋紝绛斿 4 棰樹互涓婂啀杩涗笅涓€璇?/li>
+  <li>涓夎閮藉畬鎴愬悗锛岃瘯鐫€涓嶇湅浠讳綍璧勬枡锛岃嚜宸卞彛杩颁竴閬?<code>/chat</code> 鐨勫畬鏁磋姹傛梾绋?/li>
+  <li>杩涢樁锛氭兂鍔ㄦ墜鐨勮瘽锛屽彲浠ユ敼 <code>chunkText</code> 鐨?<code>maxLen</code> 鎴栨崲 provider 瑙傚療宸紓</li>
+</ol>
+
+<footer>
+  <p><strong>鐩稿叧鏂囦欢锛?/strong><a href="MISSION.md">MISSION.md</a> 路 <a href="RESOURCES.md">RESOURCES.md</a> 路 <a href="NOTES.md">NOTES.md</a></p>
+  <p>鏈変换浣曚笉娓呮鐨勫湴鏂癸紝闅忔椂闂綘鐨?AI 鑰佸笀銆?/p>
+</footer>
+
+<script src="assets/sidebar.js"></script>
+</body>
+</html>
