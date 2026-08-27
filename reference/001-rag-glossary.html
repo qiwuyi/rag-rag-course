@@ -3,142 +3,147 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAG 閫熸煡琛?路 rag-chatbot-fork</title>
+<title>RAG 速查表 · rag-chatbot-fork</title>
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
 
-<h1>RAG 閫熸煡琛?/h1>
-<p class="meta" style="font-family:var(--sans);color:var(--muted);font-size:0.9rem;">椤圭洰锛?code>rag-chatbot-fork</code> 路 闅忚绋嬫洿鏂?路 鎵撳嵃鍙嬪ソ</p>
+<h1>RAG 速查表</h1>
+<p class="meta" style="font-family:var(--sans);color:var(--muted);font-size:0.9rem;">项目：<code>rag-chatbot-fork</code> · 随课程更新 · 打印友好</p>
 
 <nav class="toc">
-  <strong>鐩綍</strong>
+  <strong>目录</strong>
   <ul>
-    <li><a href="#glossary">鏈琛紙Glossary锛?/a></li>
-    <li><a href="#files">浠ｇ爜鍦板浘</a></li>
-    <li><a href="#endpoints">HTTP 绔偣</a></li>
-    <li><a href="#env">鐜鍙橀噺 / 閰嶇疆</a></li>
-    <li><a href="#flow">涓ゆ潯娴佹按绾块€熻</a></li>
-    <li><a href="#scripts">甯哥敤鍛戒护</a></li>
+    <li><a href="#glossary">术语表（Glossary）</a></li>
+    <li><a href="#files">代码地图</a></li>
+    <li><a href="#endpoints">HTTP 端点</a></li>
+    <li><a href="#env">环境变量 / 配置</a></li>
+    <li><a href="#flow">两条流水线速览</a></li>
+    <li><a href="#scripts">常用命令</a></li>
   </ul>
 </nav>
 
-<h2 id="glossary">鏈琛紙Glossary锛?/h2>
+<h2 id="glossary">术语表（Glossary）</h2>
 
 <dl style="font-family:var(--sans);font-size:0.95rem;">
   <dt><strong>RAG</strong> (Retrieval-Augmented Generation)</dt>
-  <dd>妫€绱㈠寮虹敓鎴愶細鎻愰棶鏃跺厛浠庣煡璇嗗簱妫€绱㈢浉鍏冲唴瀹癸紝濉炶繘鎻愮ず璇嶏紝鍐嶈 LLM 浣滅瓟锛岄伩鍏嶉噸鏂拌缁冦€?/dd>
+  <dd>检索增强生成：提问时先从知识库检索相关内容，塞进提示词，再让 LLM 作答，避免重新训练。</dd>
 
-  <dt><strong>Embedding锛堝悜閲忓寲锛?/strong></dt>
-  <dd>鎶婁竴娈垫枃瀛楁槧灏勬垚楂樼淮鍚戦噺锛堟湰浠撳簱 768/1024 缁达級銆傝涔夌浉杩戠殑鏂囧瓧鍚戦噺璺濈杩戙€傝 <code>embeddings.ts</code>銆?/dd>
+  <dt><strong>Embedding（向量化）</strong></dt>
+  <dd>把一段文字映射成高维向量（本仓库 768/1024 维）。语义相近的文字向量距离近。见 <code>embeddings.ts</code>。</dd>
 
-  <dt><strong>Chunk锛堝垎鍧楋級</strong></dt>
-  <dd>鎶婇暱鏂囩珷鍒囨垚鍙悜閲忓寲鐨勫皬娈碉紙榛樿 800 瀛楃锛屼腑鏂囨寜鏍囩偣淇濆彞鍒囧垎锛夈€傝 <code>chunk.ts</code>銆?/dd>
+  <dt><strong>Chunk（分块）</strong></dt>
+  <dd>把长文章切成可向量化的小段（默认 800 字符，中文按标点保句切分）。见 <code>chunk.ts</code>。</dd>
 
   <dt><strong>Vectorize</strong></dt>
-  <dd>Cloudflare 鐨勫悜閲忔暟鎹簱銆傚瓨 (id, vector, metadata)锛屾敮鎸?query/upsert/delete銆俉orker 閫氳繃 <code>VECTORIZE</code> 缁戝畾璁块棶銆?/dd>
+  <dd>Cloudflare 的向量数据库。存 (id, vector, metadata)，支持 query/upsert/delete。Worker 通过 <code>VECTORIZE</code> 绑定访问。</dd>
 
   <dt><strong>topK</strong></dt>
-  <dd>鍚戦噺妫€绱㈣繑鍥炴渶鐩镐技鐨勫灏戞潯銆傛湰椤圭洰 /chat 鐢?8锛屾绱㈠嚱鏁伴粯璁?15銆?/dd>
+  <dd>向量检索返回最相似的多少条。本项目 /chat 用 8，检索函数默认 15。</dd>
 
   <dt><strong>metadata filter</strong></dt>
-  <dd>鏌ヨ鏃舵寜 metadata 瀛楁杩囨护锛堟湰椤圭洰鎸?<code>language</code>锛夈€傝繃婊ゅけ璐?瓒呮椂鍒欏洖閫€鏃犺繃婊ゆ煡璇€?/dd>
+  <dd>查询时按 metadata 字段过滤（本项目按 <code>language</code>）。过滤失败/超时则回退无过滤查询。</dd>
 
-  <dt><strong>lookbehind锛堝悗琛屾柇瑷€锛?/strong></dt>
-  <dd>姝ｅ垯 <code>(?&lt;=...)</code>锛屽尮閰嶆煇妯″紡涔嬪墠/涔嬪悗鐨勪綅缃€俢hunk 鐢ㄥ畠"鍦ㄤ腑鏂囨爣鐐瑰悗鍒囧紑浣嗕笉鍚炴帀鏍囩偣"銆?/dd>
+  <dt><strong>lookbehind（后行断言）</strong></dt>
+  <dd>正则 <code>(?&lt;=...)</code>，匹配某模式之前/之后的位置。chunk 用它"在中文标点后切开但不吞掉标点"。</dd>
 
   <dt><strong>EMBED_DIM</strong></dt>
-  <dd>鍚戦噺缁村害锛岀储寮曞垱寤烘椂鍥哄畾锛堟湰椤圭洰 1024锛夈€傚啓鍏ユ椂 /admin/upsert 浼氫弗鏍兼牎楠岄暱搴︿竴鑷淬€?/dd>
+  <dd>向量维度，索引创建时固定（本项目 1024）。写入时 /admin/upsert 会严格校验长度一致。</dd>
 
   <dt><strong>PROVIDER</strong></dt>
-  <dd>embedding/LLM 鍚庣閫夋嫨锛?code>gemini</code> 鎴?<code>qwen</code>銆侴emini 涓嶆壒閲忋€丵wen 鏀寔鎵归噺銆?/dd>
+  <dd>embedding/LLM 后端选择：<code>gemini</code> 或 <code>qwen</code>。Gemini 不批量、Qwen 支持批量。</dd>
 
   <dt><strong>titleDictionary</strong></dt>
-  <dd>涓啋鑻辨爣棰樼炕璇戣〃锛堣剼鏈鐢熸垚锛夈€傝嫳鏂囩敤鎴锋悳鍒颁腑鏂囧唴瀹规椂鐢ㄤ簬缈昏瘧鏍囬銆佽浆鎹?URL銆?/dd>
+  <dd>中→英标题翻译表（脚本预生成）。英文用户搜到中文内容时用于翻译标题、转换 URL。</dd>
 
   <dt><strong>ADMIN_TOKEN</strong></dt>
-  <dd>淇濇姢 /admin/* 绔偣鐨?Bearer token銆傚啓鍏?鍒犻櫎/娓呯┖鐭ヨ瘑搴撳繀椤诲甫銆?/dd>
+  <dd>保护 /admin/* 端点的 Bearer token。写入/删除/清空知识库必须带。</dd>
 </dl>
 
-<h2 id="files">浠ｇ爜鍦板浘</h2>
+<h2 id="files">代码地图</h2>
 
 <table style="width:100%;border-collapse:collapse;font-family:var(--sans);font-size:0.9rem;">
-  <tr style="border-bottom:2px solid var(--ink);"><th style="text-align:left;padding:0.35em;">鏂囦欢</th><th style="text-align:left;padding:0.35em;">鑱岃矗</th></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>src/worker.ts</code></td><td>Worker 鍏ュ彛锛屽叏閮?HTTP 璺敱锛?chat銆?admin/*銆?debug銆?widget.js锛?/td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>src/providers/embeddings.ts</code></td><td>鏂囧瓧鈫掑悜閲忥紝Gemini/Qwen 鍙屽疄鐜?/td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>src/providers/llm.ts</code></td><td>LLM 鐢熸垚鍥炵瓟锛孏emini/Qwen 鍙屽疄鐜?/td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>src/rag/chunk.ts</code></td><td>涓枃鍙嬪ソ鍒囧潡锛堟爣棰樼骇 + 鏍囩偣绾э級</td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>src/rag/retriever.ts</code></td><td>鍚戦噺妫€绱?+ 璇█杩囨护 + 涓婁笅鏂?鏉ユ簮缁勮</td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>src/rag/prompt.ts</code></td><td>缁勮鎻愮ず璇嶏紙瑙掕壊+涓婁笅鏂?鍘嗗彶+闂+绾︽潫锛?/td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>src/rag/title-dictionary.ts</code></td><td>涓啋鑻辨爣棰樺瓧鍏镐笌缈昏瘧鍑芥暟锛堣嚜鍔ㄧ敓鎴愶級</td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>src/utils/md.ts</code></td><td>Markdown 鈫?绾枃鏈?/td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>src/utils/schema.ts</code></td><td>Env / VectorizeIndex / MatchMeta 绫诲瀷瀹氫箟</td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>scripts/ingest.ts</code></td><td>鏈湴鎽勫叆涓昏剼鏈紙骞跺彂銆佹壒閲忋€佸閿欙級</td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>scripts/manual-ingest.ts</code></td><td>鎵嬪姩鎽勫叆鎸囧畾鏂囦欢</td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>scripts/full-reindex.ts</code></td><td>娓呯┖搴?+ 鍒犵姸鎬?+ 鍏ㄩ噺閲嶅缓</td></tr>
-  <tr><td style="padding:0.35em;"><code>scripts/generate-title-dictionary.ts</code></td><td>鎵弿涓嫳鏍囬瀵癸紝鐢熸垚 title-dictionary</td></tr>
+  <tr style="border-bottom:2px solid var(--ink);"><th style="text-align:left;padding:0.35em;">文件</th><th style="text-align:left;padding:0.35em;">职责</th></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>src/worker.ts</code></td><td>Worker 入口，全部 HTTP 路由（/chat、/admin/*、/debug、/widget.js）</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>src/providers/embeddings.ts</code></td><td>文字→向量，Gemini/Qwen 双实现</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>src/providers/llm.ts</code></td><td>LLM 生成回答，Gemini/Qwen 双实现</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>src/rag/chunk.ts</code></td><td>中文友好切块（标题级 + 标点级）</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>src/rag/retriever.ts</code></td><td>向量检索 + 语言过滤 + 上下文/来源组装</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>src/rag/prompt.ts</code></td><td>组装提示词（角色+上下文+历史+问题+约束）</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>src/rag/title-dictionary.ts</code></td><td>中→英标题字典与翻译函数（自动生成）</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>src/utils/md.ts</code></td><td>Markdown → 纯文本</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>src/utils/schema.ts</code></td><td>Env / VectorizeIndex / MatchMeta 类型定义</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>scripts/ingest.ts</code></td><td>本地摄入主脚本（并发、批量、容错）</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>scripts/manual-ingest.ts</code></td><td>手动摄入指定文件</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>scripts/full-reindex.ts</code></td><td>清空库 + 删状态 + 全量重建</td></tr>
+  <tr><td style="padding:0.35em;"><code>scripts/generate-title-dictionary.ts</code></td><td>扫描中英标题对，生成 title-dictionary</td></tr>
 </table>
 
-<h2 id="endpoints">HTTP 绔偣</h2>
+<h2 id="endpoints">HTTP 端点</h2>
 
 <table style="width:100%;border-collapse:collapse;font-family:var(--sans);font-size:0.9rem;">
-  <tr style="border-bottom:2px solid var(--ink);"><th style="text-align:left;padding:0.35em;">鏂规硶+璺緞</th><th style="text-align:left;padding:0.35em;">閴存潈</th><th style="text-align:left;padding:0.35em;">浣滅敤</th></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>POST /chat</code></td><td>鏃?/td><td>闂瓟涓绘帴鍙ｏ紝body: {message, history, language} 鈫?{answer, sources}</td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>POST /admin/upsert</code></td><td>ADMIN_TOKEN</td><td>鎵归噺鍐欏叆鍚戦噺鏉＄洰锛屾牎楠岀淮搴?/td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>DELETE /admin/delete</code></td><td>ADMIN_TOKEN</td><td>鎸?ids 鍒犻櫎</td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>DELETE /admin/clear-all</code></td><td>ADMIN_TOKEN</td><td>娓呯┖鏁翠釜绱㈠紩锛堝垎椤垫煡璇?鎵归噺鍒狅級</td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>POST /debug</code></td><td>鏃?/td><td>璋冭瘯锛氶棶棰樺悜閲忓寲+鏌ヨ锛岃繑鍥炲師濮?matches</td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>POST /admin/test-query</code></td><td>ADMIN_TOKEN</td><td>娴嬭瘯澶氱 query 閰嶇疆鐨勫樊寮?/td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>GET /network-debug</code></td><td>鏃?/td><td>鍥炴樉璇锋眰澶?cf 淇℃伅</td></tr>
-  <tr><td style="padding:0.35em;"><code>GET /widget.js</code></td><td>鏃?/td><td>杩斿洖鍙祵鍏ュ墠绔殑鑱婂ぉ widget锛圝S 瀛楃涓诧級</td></tr>
+  <tr style="border-bottom:2px solid var(--ink);"><th style="text-align:left;padding:0.35em;">方法+路径</th><th style="text-align:left;padding:0.35em;">鉴权</th><th style="text-align:left;padding:0.35em;">作用</th></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>POST /chat</code></td><td>无</td><td>问答主接口，body: {message, history, language} → {answer, sources}</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>POST /admin/upsert</code></td><td>ADMIN_TOKEN</td><td>批量写入向量条目，校验维度</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>DELETE /admin/delete</code></td><td>ADMIN_TOKEN</td><td>按 ids 删除</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>DELETE /admin/clear-all</code></td><td>ADMIN_TOKEN</td><td>清空整个索引（分页查询+批量删）</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>POST /debug</code></td><td>无</td><td>调试：问题向量化+查询，返回原始 matches</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>POST /admin/test-query</code></td><td>ADMIN_TOKEN</td><td>测试多种 query 配置的差异</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>GET /network-debug</code></td><td>无</td><td>回显请求头/cf 信息</td></tr>
+  <tr><td style="padding:0.35em;"><code>GET /widget.js</code></td><td>无</td><td>返回可嵌入前端的聊天 widget（JS 字符串）</td></tr>
 </table>
 
-<h2 id="env">鐜鍙橀噺 / 閰嶇疆锛坵rangler.toml + .env锛?/h2>
+<h2 id="env">环境变量 / 配置（wrangler.toml + .env）</h2>
 
 <table style="width:100%;border-collapse:collapse;font-family:var(--sans);font-size:0.9rem;">
-  <tr style="border-bottom:2px solid var(--ink);"><th style="text-align:left;padding:0.35em;">鍙橀噺</th><th style="text-align:left;padding:0.35em;">鍚箟</th></tr>
+  <tr style="border-bottom:2px solid var(--ink);"><th style="text-align:left;padding:0.35em;">变量</th><th style="text-align:left;padding:0.35em;">含义</th></tr>
   <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>PROVIDER</code></td><td><code>gemini</code> | <code>qwen</code></td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>EMBED_DIM</code></td><td>鍚戦噺缁村害锛堥』涓庣储寮曚竴鑷达紝鏈」鐩?1024锛?/td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>LLM_MODEL</code></td><td>鐢熸垚妯″瀷锛屽 gemini-2.5-flash / qwen-turbo-latest</td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>GOOGLE_API_KEY</code></td><td>Gemini 瀵嗛挜锛圥ROVIDER=gemini 鏃跺繀闇€锛?/td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>QWEN_API_KEY / QWEN_BASE / QWEN_EMBED_MODEL</code></td><td>Qwen 瀵嗛挜/绔偣/embedding 妯″瀷</td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>ADMIN_TOKEN</code></td><td>/admin/* 閴存潈 token</td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>VECTORIZE</code> 缁戝畾</td><td>wrangler.toml 閲?[[vectorize]] 瀹氫箟锛宨ndex_name = website-rag</td></tr>
-  <tr><td style="padding:0.35em;"><code>WORKER_URL / CONTENT_DIR / BASE_URL</code></td><td>鎽勫叆鑴氭湰鐢ㄧ殑锛歐orker 鍦板潃 / 鏂囩珷鐩綍 / 绔欑偣鏍?URL</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>EMBED_DIM</code></td><td>向量维度（须与索引一致，本项目 1024）</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>LLM_MODEL</code></td><td>生成模型，如 gemini-2.5-flash / qwen-turbo-latest</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>GOOGLE_API_KEY</code></td><td>Gemini 密钥（PROVIDER=gemini 时必需）</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>QWEN_API_KEY / QWEN_BASE / QWEN_EMBED_MODEL</code></td><td>Qwen 密钥/端点/embedding 模型</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>ADMIN_TOKEN</code></td><td>/admin/* 鉴权 token</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.35em;"><code>VECTORIZE</code> 绑定</td><td>wrangler.toml 里 [[vectorize]] 定义，index_name = website-rag</td></tr>
+  <tr><td style="padding:0.35em;"><code>WORKER_URL / CONTENT_DIR / BASE_URL</code></td><td>摄入脚本用的：Worker 地址 / 文章目录 / 站点根 URL</td></tr>
 </table>
 
-<h2 id="flow">涓ゆ潯娴佹按绾块€熻</h2>
+<h2 id="flow">两条流水线速览</h2>
 
-<div class="diagram">鎽勫叆锛堢绾匡紝鏈湴鑴氭湰 scripts/ingest.ts锛?  content/*.md 鈹€鈻?markdownToPlain 鈹€鈻?chunkText(800) 鈹€鈻?embedding 鈹€鈻?POST /admin/upsert 鈹€鈻?Vectorize
-       (gray-matter 璇?frontmatter, 璺宠繃 draft)
+<div class="diagram">摄入（离线，本地脚本 scripts/ingest.ts）
+  content/*.md ─▶ markdownToPlain ─▶ chunkText(800) ─▶ embedding ─▶ POST /admin/upsert ─▶ Vectorize
+       (gray-matter 读 frontmatter, 跳过 draft)
 
-鏌ヨ锛堝湪绾匡紝Worker /chat锛?  message 鈹€鈻?embed 鈹€鈻?VECTORIZE.query(filter language, topK=8, 500ms 瓒呮椂鈫掑洖閫€)
-          鈹€鈻?contexts + sources 鈹€鈻?buildPrompt 鈹€鈻?llmGenerate 鈹€鈻?{ answer, sources }</div>
+查询（在线，Worker /chat）
+  message ─▶ embed ─▶ VECTORIZE.query(filter language, topK=8, 500ms 超时→回退)
+          ─▶ contexts + sources ─▶ buildPrompt ─▶ llmGenerate ─▶ { answer, sources }</div>
 
-<h2 id="scripts">甯哥敤鍛戒护</h2>
+<h2 id="scripts">常用命令</h2>
 
-<pre><code># 鏈湴璧?Worker锛堝紑鍙戯級
+<pre><code># 本地起 Worker（开发）
 npm run dev
 
-# 閮ㄧ讲鍒?Cloudflare
+# 部署到 Cloudflare
 npm run deploy
 
-# 鍏ㄩ噺鎽勫叆锛堥渶 .env 閰嶅ソ PROVIDER/瀵嗛挜/WORKER_URL/ADMIN_TOKEN锛?npm run ingest
+# 全量摄入（需 .env 配好 PROVIDER/密钥/WORKER_URL/ADMIN_TOKEN）
+npm run ingest
 
-# 鍙憚鍏ユ寚瀹氭枃浠?npm run manual-ingest content/zh/blog/xxx/index.md
+# 只摄入指定文件
+npm run manual-ingest content/zh/blog/xxx/index.md
 
-# 鐢熸垚涓嫳鏍囬瀛楀吀
+# 生成中英标题字典
 npm run generate-titles
 
-# 娓呯┖骞堕噸寤烘暣涓储寮?npm run full-reindex
+# 清空并重建整个索引
+npm run full-reindex
 
-# 娴嬭瘯
-npm run test:run   # 鍗曞厓+闆嗘垚
-npm run test:e2e   # Playwright 绔埌绔?/code></pre>
+# 测试
+npm run test:run   # 单元+集成
+npm run test:e2e   # Playwright 端到端</code></pre>
 
 <footer>
-  <p><strong>璇剧▼锛?/strong><a href="../lessons/0001-rag-pipeline-overview.html">鈶?鍏ㄦ祦绋嬫瑙?/a> 路 <a href="../lessons/0002-ingestion-pipeline.html">鈶?鎽勫叆娴佹按绾?/a> 路 <a href="../lessons/0003-retrieval-generation.html">鈶?鏌ヨ娴佹按绾?/a></p>
-  <p><strong>璧勬簮锛?/strong>瑙?<a href="../RESOURCES.md">RESOURCES.md</a> 路 鏈変换浣曠枒闂棶 AI 鑰佸笀銆?/p>
+  <p><strong>课程：</strong><a href="../lessons/0001-rag-pipeline-overview.html">① 全流程概览</a> · <a href="../lessons/0002-ingestion-pipeline.html">② 摄入流水线</a> · <a href="../lessons/0003-retrieval-generation.html">③ 查询流水线</a></p>
+  <p><strong>资源：</strong>见 <a href="../RESOURCES.md">RESOURCES.md</a> · 有任何疑问问 AI 老师。</p>
 </footer>
 
 <script src="../assets/sidebar.js"></script>
