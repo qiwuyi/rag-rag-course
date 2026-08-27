@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAG 鍘熺悊璇剧▼ 路 rag-chatbot-fork</title>
+<title>RAG 原理课程 · rag-chatbot-fork</title>
 <link rel="stylesheet" href="assets/style.css">
 <style>
   .card {
@@ -54,52 +54,58 @@
 </head>
 <body>
 
-<h1>RAG 鍘熺悊璇剧▼</h1>
+<h1>RAG 原理课程</h1>
 <p class="meta" style="font-family:var(--sans);color:var(--muted);font-size:0.95rem;">
-  鏁欏妗堜緥锛?code>rag-chatbot-fork</code>锛圕loudflare Workers 涓枃 RAG 鑱婂ぉ鏈哄櫒浜猴級
+  教学案例：<code>rag-chatbot-fork</code>（Cloudflare Workers 中文 RAG 聊天机器人）
 </p>
 
 <div class="callout">
-  <strong>瀛︿範璺緞</strong>
-  寤鸿鎸?鈶?鈫?鈶?鈫?鈶?椤哄簭瀛︿範锛屾瘡璇?5-10 鍒嗛挓锛屽仛瀹屾湯灏剧殑浜や簰娴嬮獙鍐嶈繘涓嬩竴璇俱€?  閬囧埌涓嶆噦鐨勬湳璇紝闅忔椂缈?<strong>閫熸煡琛?/strong>銆?</div>
+  <strong>学习路径</strong>
+  建议按 ① → ② → ③ 顺序学习，每课 5-10 分钟，做完末尾的交互测验再进下一课。
+  遇到不懂的术语，随时翻 <strong>速查表</strong>。
+</div>
 
-<div class="progress">馃摉 鏈绋嬪叡 <b>3</b> 鑺傝 + <b>1</b> 浠介€熸煡琛?路 鍏ㄩ儴涓轰氦浜掑紡 HTML</div>
+<div class="progress">📖 本课程共 <b>3</b> 节课 + <b>1</b> 份速查表 · 全部为交互式 HTML</div>
 
-<h2>璇剧▼</h2>
+<h2>课程</h2>
 
 <a class="card" href="lessons/0001-rag-pipeline-overview.html">
-  <span class="num">鈶?/span> 绗竴璇?路 RAG 鍏ㄦ祦绋嬫瑙?  <h3>澶у浘鏅細涓€涓?RAG 绯荤粺鍦ㄥ仛浠€涔?/h3>
-  <p>涓ゆ潯娴佹按绾匡紙鎽勫叆 vs 鏌ヨ锛夈€佷负浠€涔堢敤鍚戦噺銆佸畬鏁翠唬鐮佸湴鍥撅紙鏂囦欢 鈫?闃舵锛夈€傞€傚悎鍏堝缓绔嬪叏灞€瑙傘€?/p>
+  <span class="num">①</span> 第一课 · RAG 全流程概览
+  <h3>大图景：一个 RAG 系统在做什么</h3>
+  <p>两条流水线（摄入 vs 查询）、为什么用向量、完整代码地图（文件 ↔ 阶段）。适合先建立全局观。</p>
 </a>
 
 <a class="card" href="lessons/0002-ingestion-pipeline.html">
-  <span class="num">鈶?/span> 绗簩璇?路 鎽勫叆娴佹按绾?  <h3>浠?Markdown 鍒板悜閲忓簱</h3>
-  <p>Markdown鈫掔函鏂囨湰鈫掍腑鏂囧弸濂藉垏 chunk鈫掑悜閲忓寲鈫掑啓鍏ョ储寮曪紱Gemini/Qwen 宸紓锛涜秴蹇憚鍏ョ殑骞跺彂璁捐銆?/p>
+  <span class="num">②</span> 第二课 · 摄入流水线
+  <h3>从 Markdown 到向量库</h3>
+  <p>Markdown→纯文本→中文友好切 chunk→向量化→写入索引；Gemini/Qwen 差异；超快摄入的并发设计。</p>
 </a>
 
 <a class="card" href="lessons/0003-retrieval-generation.html">
-  <span class="num">鈶?/span> 绗笁璇?路 鏌ヨ娴佹按绾?  <h3>/chat 鐨勫畬鏁存梾绋?/h3>
-  <p>闂鍚戦噺鍖栤啋甯﹁瑷€杩囨护鐨勬绱?鍥為€€鈫掓彁绀鸿瘝缁勮鈫扡LM 鐢熸垚锛涘璇█鍑哄鐨勪紭闆呴檷绾с€?/p>
+  <span class="num">③</span> 第三课 · 查询流水线
+  <h3>/chat 的完整旅程</h3>
+  <p>问题向量化→带语言过滤的检索+回退→提示词组装→LLM 生成；多语言出处的优雅降级。</p>
 </a>
 
-<h2>閫熸煡</h2>
+<h2>速查</h2>
 
 <a class="card" href="reference/001-rag-glossary.html">
-  <span class="num ref">R</span> RAG 閫熸煡琛?  <h3>鏈琛?路 浠ｇ爜鍦板浘 路 绔偣 路 閰嶇疆 路 鍛戒护</h3>
-  <p>涓€椤垫煡瀹岋細Glossary銆佹瘡涓枃浠剁殑鑱岃矗銆丠TTP 绔偣銆佺幆澧冨彉閲忋€佸父鐢ㄥ懡浠ゃ€傛墦鍗板弸濂斤紝闅忔椂鍥炵炕銆?/p>
+  <span class="num ref">R</span> RAG 速查表
+  <h3>术语表 · 代码地图 · 端点 · 配置 · 命令</h3>
+  <p>一页查完：Glossary、每个文件的职责、HTTP 端点、环境变量、常用命令。打印友好，随时回翻。</p>
 </a>
 
-<h2>瀛︿範寤鸿</h2>
+<h2>学习建议</h2>
 <ol class="roadmap">
-  <li>姣忚鍏堣姝ｆ枃锛岄亣鍒颁唬鐮佸氨瀵圭収浠撳簱 <code>D:\ds\rag-chatbot-fork\src</code> 閲岀殑鐪熷疄鏂囦欢鐪?/li>
-  <li>鍋氬畬 5 閬撴祴楠岋紝绛斿 4 棰樹互涓婂啀杩涗笅涓€璇?/li>
-  <li>涓夎閮藉畬鎴愬悗锛岃瘯鐫€涓嶇湅浠讳綍璧勬枡锛岃嚜宸卞彛杩颁竴閬?<code>/chat</code> 鐨勫畬鏁磋姹傛梾绋?/li>
-  <li>杩涢樁锛氭兂鍔ㄦ墜鐨勮瘽锛屽彲浠ユ敼 <code>chunkText</code> 鐨?<code>maxLen</code> 鎴栨崲 provider 瑙傚療宸紓</li>
+  <li>每课先读正文，遇到代码就对照仓库 <code>D:\ds\rag-chatbot-fork\src</code> 里的真实文件看</li>
+  <li>做完 5 道测验，答对 4 题以上再进下一课</li>
+  <li>三课都完成后，试着不看任何资料，自己口述一遍 <code>/chat</code> 的完整请求旅程</li>
+  <li>进阶：想动手的话，可以改 <code>chunkText</code> 的 <code>maxLen</code> 或换 provider 观察差异</li>
 </ol>
 
 <footer>
-  <p><strong>鐩稿叧鏂囦欢锛?/strong><a href="MISSION.md">MISSION.md</a> 路 <a href="RESOURCES.md">RESOURCES.md</a> 路 <a href="NOTES.md">NOTES.md</a></p>
-  <p>鏈変换浣曚笉娓呮鐨勫湴鏂癸紝闅忔椂闂綘鐨?AI 鑰佸笀銆?/p>
+  <p><strong>相关文件：</strong><a href="MISSION.md">MISSION.md</a> · <a href="RESOURCES.md">RESOURCES.md</a> · <a href="NOTES.md">NOTES.md</a></p>
+  <p>有任何不清楚的地方，随时问你的 AI 老师。</p>
 </footer>
 
 <script src="assets/sidebar.js"></script>
