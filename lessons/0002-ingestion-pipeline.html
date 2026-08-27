@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 2 路 鎽勫叆娴佹按绾匡細浠?Markdown 鍒板悜閲忓簱</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>鎽勫叆娴佹按绾匡細浠?Markdown 鍒板悜閲忓簱</h1>
+<p class="meta" style="font-family:var(--sans);color:var(--muted);font-size:0.9rem;">绗簩璇?路 鏍稿績鏂囦欢锛?code>scripts/ingest.ts</code> 路 <code>src/rag/chunk.ts</code> 路 <code>src/utils/md.ts</code></p>
+
+<nav class="toc">
+  <strong>鐩綍</strong>
+  <ul>
+    <li><a href="#why">鎽勫叆瑕佽В鍐充粈涔?/a></li>
+    <li><a href="#step1">绗竴姝ワ細Markdown 鈫?绾枃鏈紙md.ts锛?/a></li>
+    <li><a href="#step2">绗簩姝ワ細鍒囧垎鎴?chunk锛坈hunk.ts锛?/a></li>
+    <li><a href="#step3">绗笁姝ワ細鍚戦噺鍖栵紙embeddings.ts锛?/a></li>
+    <li><a href="#step4">绗洓姝ワ細鍐欒繘鍚戦噺搴擄紙/admin/upsert锛?/a></li>
+    <li><a href="#perf">鎬ц兘璁捐锛氫负浠€涔堣繖涔堝揩</a></li>
+    <li><a href="#quiz">娴嬮獙</a></li>
+  </ul>
+</nav>
+
+<h2 id="why">鎽勫叆瑕佽В鍐充粈涔?/h2>
+
+<p>鍚戦噺妫€绱㈢殑杈撳叆杈撳嚭鏄細<code>涓€娈垫枃瀛?鈫?涓€涓悜閲?/code>銆備絾涓€绡?Markdown 鏂囩珷鍙兘鍑犲崈瀛楋紝鐩存帴鏁寸瘒鍚戦噺鍖栨湁涓や釜闂锛?/p>
+
+<ol>
+  <li><strong>绮掑害澶矖</strong>鈥斺€斾竴绡囨枃绔犲線寰€璁插涓富棰橈紝鐢ㄦ埛鍙棶鍏朵腑涓€娈碉紝鏁寸瘒鍚戦噺浼氳"涓嶇浉鍏?鐨勯儴鍒嗘嫋绱绱㈢浉鍏虫€?/li>
+  <li><strong>瓒呭嚭 embedding 妯″瀷涓婇檺</strong>鈥斺€攅mbedding 妯″瀷鏈夋渶澶ц緭鍏ラ暱搴︼紝闀挎枃蹇呴』鍒囧皬</li>
+</ol>
+
+<div class="callout"><strong>鎽勫叆鐨勬湰璐?/strong>
+鎶?涓€绡囨枃绔?鍙樻垚"涓€鎵?(鍚戦噺 + 鍘熸枃 + 鍏冩暟鎹? 鐨勬潯鐩?锛屽瓨杩涘悜閲忓簱銆備箣鍚庢瘡娆＄敤鎴锋彁闂紝灏辫兘绮剧‘鍦版崬鍥炴渶鐩稿叧鐨勯偅涓€灏忔锛岃€屼笉鏄暣绡囨枃绔犮€?/div>
+
+<h2 id="step1">绗竴姝ワ細Markdown 鈫?绾枃鏈紙md.ts锛?/h2>
+
+<p>杩欎釜椤圭洰寰堝鐨勪竴鐐癸細Markdown 鐨?`#`銆乣**`銆侀摼鎺ョ瓑璇硶锛宔mbedding 妯″瀷澶勭悊涓嶅ソ銆傛墍浠ュ厛杞垚骞插噣鐨勭函鏂囨湰銆?/p>
+
+<pre><code>// src/utils/md.ts
+import MarkdownIt from 'markdown-it';
+
+const md = new MarkdownIt({ html: false, linkify: false, typographer: false });
+
+export function markdownToPlain(mdContent: string): string {
+  const html = md.render(mdContent);
+  return html
+    .replace(/&lt;style[\s\S]*?&lt;\/style&gt;/g, ' ')   // 鍘绘帀鏍峰紡
+    .replace(/&lt;script[\s\S]*?&lt;\/script&gt;/g, ' ')  // 鍘绘帀鑴氭湰
+    .replace(/&lt;[^&gt;]+&gt;/g, ' ')                    // 鍘绘帀鎵€鏈夋爣绛?    .replace(/&amp;nbsp;|&amp;amp;|&amp;lt;|&amp;gt;/g, ' ')
+    .replace(/[ \t\f\v]+/g, ' ')   // 鍘嬬缉绌虹櫧
+    .replace(/\n+/g, '\n')
+    .trim();
+}</code></pre>
+
+<p>鎬濊矾锛?strong>鍏堢敤 MarkdownIt 娓叉煋鎴?HTML锛屽啀绮楁毚鍦板墺鎺夋爣绛?/strong>銆傛敞閲婇噷浣滆€呰嚜宸遍兘鍐欎簡 "crudely"锛岃鏄庤繖鏄釜澶熺敤灏辫鐨勬柟妗堛€?/p>
+
+<div class="callout--tip callout"><strong>鏄撻敊鐐?/strong>
+Markdown 閲?<code>&lt;code&gt;X&lt;/code&gt;</code> 杞垚 HTML 鍚庢槸 <code>&lt;code&gt;</code> 鏍囩锛屽墺鏍囩鏃朵細鎶婁唬鐮佸唴瀹逛篃鐣欎笅锛堣繖鏄兂瑕佺殑琛屼负锛夈€?浣嗚浆涔夊疄浣擄紙<code>&amp;amp;</code> 绛夛級瑕佸崟鐙鐞嗭紝鍚﹀垯"&amp;" 浼氬彉鎴愪贡鐮佲€斺€旀墍浠ユ湁涓€琛屼笓闂?replace 瀹炰綋銆?/div>
+
+<h2 id="step2">绗簩姝ワ細鍒囧垎鎴?chunk锛坈hunk.ts锛?/h2>
+
+<p>杩欐槸鍏ㄩ」鐩渶鏈?涓枃鐗硅壊"鐨勫湴鏂广€俙chunkText` 鍒嗕袱绾у垏锛?/p>
+
+<pre><code>// src/rag/chunk.ts
+export function chunkText(input: string, maxLen = 800): string[] {
+  // 绗竴绾э細鎸?Markdown 鏍囬鍒囷紙##銆?##鈥︼級
+  const sections = input
+    .split(/^#{1,6}\s+/m)   // 鍖归厤琛岄鐨?1~6 涓?# 鍔犵┖鏍?    .map(s => s.trim())
+    .filter(Boolean);
+
+  const chunks: string[] = [];
+  const pushChunk = (s: string) => { if (s.trim()) chunks.push(s.trim()); };
+
+  for (const sec of sections.length ? sections : [input]) {
+    if (sec.length &lt;= maxLen) { pushChunk(sec); continue; }
+
+    // 绗簩绾э細瓒呴暱鐨勮妭锛屾寜涓枃鍙ュ彿/闂彿/鎰熷徆鍙?鍒嗗彿鍒囷紝灏介噺淇濇寔鍙ュ瓙瀹屾暣
+    let buf = '';
+    for (const part of sec.split(/(?&lt;=[銆傦紒锛??锛?]\s*)/)) {
+      if ((buf + part).length &gt; maxLen) {
+        pushChunk(buf); buf = part;
+      } else {
+        buf += part;
+      }
+    }
+    pushChunk(buf);
+  }
+  return chunks;
+}</code></pre>
+
+<p>涓や釜璁捐鍐崇瓥鍊煎緱璁颁綇锛?/p>
+
+<ol>
+  <li><strong>鍏堟寜鏍囬鍒?/strong>锛歁arkdown 鏍囬澶╃劧鏄?璇箟鍒嗙晫"鈥斺€斾竴涓?`##` 涓嬬殑鍐呭閫氬父鏄悓涓€涓婚锛岀洿鎺ヤ綔涓轰竴涓€欓€?chunk 鍗曞厓銆?/li>
+  <li><strong>鍐嶆寜涓枃鏍囩偣鍒囬暱娈?/strong>锛歚(?&lt;=...)` 鏄?strong>鍚庤鏂█</strong>锛坙ookbehind锛夛紝琛ㄧず"鍦ㄥ彞鍙?闂彿/鎰熷徆鍙?鍒嗗彿<em>鍚庨潰</em>鍒囧紑锛屼絾涓嶆秷璐硅繖涓爣鐐?銆傝繖鏍?chunk 杈圭晫钀藉湪鍙ュ瓙涔嬮棿锛屼笉浼氭妸涓€鍙ヨ瘽鍔堟垚涓ゅ崐鈥斺€斿涓枃灏ゅ叾閲嶈锛堜腑鏂囨病鏈夌┖鏍煎垎璇嶏級銆?/li>
+</ol>
+
+<div class="callout"><strong>涓轰粈涔?chunk 澶у皬鏄?800锛?/strong>
+<code>maxLen = 800</code> 瀛楃锛堢害 800 涓腑鏂囧瓧锛夋槸缁忛獙鍊硷細澶ぇ 鈫?妫€绱㈢矑搴︾矖銆佸惈澶鍣０锛涘お灏?鈫?涓婁笅鏂囪鍒囨垚纰庣墖锛岃涔変笉瀹屾暣銆?800 涔熺鍚堝ぇ澶氭暟 embedding 妯″瀷鐨勮緭鍏ヤ笂闄愩€傚悗闈?<code>retriever</code> 閲屽瓨搴撴椂杩樻妸 text 鎴柇鍒?500 瀛楃锛屾槸缁?濉炶繘鎻愮ず璇?鐣欎綑閲忋€?/div>
+
+<h2 id="step3">绗笁姝ワ細鍚戦噺鍖栵紙embeddings.ts锛?/h2>
+
+<p>姣忎釜 chunk 閮借鍙樻垚鍚戦噺銆傝繖涓粨搴撴敮鎸佷袱涓?provider锛屽畠浠殑 <strong>API 宸紓鍐冲畾浜嗘憚鍏ユ€ц兘鐨勫法澶у樊鍒?/strong>锛?/p>
+
+<table style="width:100%;border-collapse:collapse;font-family:var(--sans);font-size:0.92rem;">
+  <tr style="border-bottom:2px solid var(--ink);"><th style="text-align:left;padding:0.4em;"></th><th style="text-align:left;padding:0.4em;">Gemini</th><th style="text-align:left;padding:0.4em;">Qwen (DashScope)</th></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.4em;">妯″瀷</td><td style="padding:0.4em;"><code>text-embedding-004</code></td><td style="padding:0.4em;"><code>text-embedding-v2/v4</code></td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.4em;">鎵归噺</td><td style="padding:0.4em;"><strong>涓嶆敮鎸?/strong>锛屼竴鏉′竴鏉¤姹?/td><td style="padding:0.4em;"><strong>鏀寔</strong>锛屼竴鎵规渶澶?10 鏉?/td></tr>
+  <tr><td style="padding:0.4em;">缁村害鎺у埗</td><td style="padding:0.4em;">璇锋眰閲屾寚瀹?<code>outputDimensionality</code></td><td style="padding:0.4em;">杩斿洖鍚?<code>slice(0, dim)</code> 鎴柇/琛ラ浂</td></tr>
+</table>
+
+<pre><code>// ingest.ts 閲岀殑鎵瑰鐞嗗皝瑁?async function getBatchEmbeddings(texts: string[]): Promise&lt;number[][]&gt; {
+  if (PROVIDER === 'gemini') {
+    // Gemini 涓嶆敮鎸佹壒閲忥細閫愪釜璇锋眰
+    for (const text of texts) { ... 姣忔涓€涓?fetch ... }
+  } else {
+    // Qwen 鏀寔鎵归噺锛氫竴娆¤姹備紶鏁翠釜鏁扮粍
+    const r = await fetch(url, {
+      body: JSON.stringify({ model: QWEN_EMBED_MODEL, input: texts }),
+      ...
+    });
+    return j.data.map(d => d.embedding.slice(0, EMBED_DIM));
+  }
+}</code></pre>
+
+<div class="callout"><strong>涓轰粈涔?EMBED_DIM 涓€瀹氳涓€鑷达紵</strong>
+Vectorize 绱㈠紩鍒涘缓鏃跺氨鍥哄畾浜嗙淮搴︼紙杩欎釜椤圭洰鏄?1024锛夈€?code>EMBED_DIM = 1024</code> 鍦?<code>wrangler.toml</code> 閲岄厤濂姐€?鍐欏叆鏃?/admin/upsert 浼氭牎楠?<code>vector.length === EMBED_DIM</code>锛屼笉涓€鑷寸洿鎺ユ姤閿欍€傛墍浠ヤ唬鐮侀噷 <code>slice(0, dim)</code> 鎴柇銆?code>fill(0)</code> 琛ラ浂锛岄兘鏄负浜嗚缁村害涓ユ牸瀵归綈銆?/div>
+
+<h2 id="step4">绗洓姝ワ細鍐欒繘鍚戦噺搴擄紙/admin/upsert锛?/h2>
+
+<p>鎽勫叆鑴氭湰鏄湰鍦扮▼搴忥紝涓嶇洿鎺ョ Vectorize銆傚畠鎶婃潯鐩墦鍖?<code>POST</code> 缁?Worker锛?/p>
+
+<pre><code>// ingest.ts 鈥?缁勮涓€鏉?entry
+items.push({
+  id: generateShortId(baseUrl, sourcePath, i + j),  // 鐭?ID锛屽甫 chunk 搴忓彿
+  vector: finalVector,           // 鍚戦噺锛堜弗鏍?1024 缁达級
+  text:   text.slice(0, 500),    // 鍘熸枃锛堟埅鏂紝妫€绱㈠悗濉炶繘鎻愮ず璇嶇敤锛?  title:  title,                 // 鏂囩珷鏍囬
+  source: sourcePath,            // 鐩稿璺緞锛屽 zh/blog/xxx/index.md
+  url:    baseUrl,               // 鐢熸垚鐨勭綉椤?URL
+  language: language             // 'zh' | 'en' 鈫?杩欐槸妫€绱㈣繃婊ょ殑鍏抽敭瀛楁锛?});</code></pre>
+
+<p>娉ㄦ剰杩欎釜 <code>language</code> 瀛楁鈥斺€斿畠琚啓杩涗簡 <strong>metadata</strong>锛屼笅涓€璇句綘浼氱湅鍒板畠鍦ㄦ绱㈡椂鏈夊閲嶈锛堣瑷€杩囨护灏遍潬瀹冿級銆?/p>
+
+<p>Worker 绔?<code>/admin/upsert</code> 鍋氫笁浠朵簨锛?/p>
+
+<ol>
+  <li><strong>鏍￠獙鏉冮檺</strong>锛氳姹傚ご蹇呴』甯?<code>Authorization: Bearer ${ADMIN_TOKEN}</code>锛屽惁鍒?401</li>
+  <li><strong>鏍￠獙缁村害</strong>锛氭瘡涓?vector 闀垮害蹇呴』鏄?EMBED_DIM锛屽惁鍒?500</li>
+  <li><strong>鍐欏叆</strong>锛氭妸 <code>{id, values, metadata}</code> 浜ょ粰 <code>env.VECTORIZE.upsert()</code></li>
+</ol>
+
+<h2 id="perf">鎬ц兘璁捐锛氫负浠€涔堣繖涔堝揩</h2>
+
+<p>ingest 鑴氭湰娉ㄩ噴鍐欑潃 "Ultra-fast batch ingest"銆傚畠鐢ㄤ簡鍥涘眰骞跺彂锛屽€煎緱瀛︼細</p>
+
+<pre><code>const MAX_CONCURRENT_FILES     = PROVIDER === 'gemini' ? 30 : 15;  // 鍚屾椂澶勭悊澶氬皯鏂囦欢
+const MAX_CONCURRENT_EMBEDDINGS= PROVIDER === 'gemini' ? 50 : 25;  // embedding 骞跺彂
+const UPLOAD_BATCH_SIZE        = 300;                               // 姣忔涓婁紶澶氬皯鏉?const EMBEDDING_BATCH_SIZE     = PROVIDER === 'gemini' ? 1 : 10;   // 姣忔 embedding 鍑犳潯</code></pre>
+
+<ul>
+  <li><strong>鏂囦欢绾у苟鍙?/strong>锛氫竴鎵?15~30 涓枃浠跺悓鏃跺鐞嗭紙<code>Promise.allSettled</code>锛?/li>
+  <li><strong>鎵归噺涓婁紶</strong>锛氭敀澶?300 鏉′竴娆?<code>POST</code>锛屽噺灏?HTTP 寰€杩?/li>
+  <li><strong>瀹归敊</strong>锛氬崟鏂囦欢澶辫触涓嶅奖鍝嶆暣浣擄紙<code>allSettled</code> + 鍐呴儴 try/catch锛夛紝涓婁紶澶辫触浼氭妸鏉＄洰鏀惧洖闃熷垪閲嶈瘯</li>
+  <li><strong>闄愰€?/strong>锛氭壒闂村姞 5~50ms 灏忓欢杩燂紝闃叉鎶?API 鎵撶垎</li>
+</ul>
+
+<div class="callout--tip callout"><strong>涓嫳鍙岃鍘婚噸閫昏緫</strong>
+ingest 榛樿鍙敹 <code>zh/blog/**/index.md</code> 鍜?<code>en/blog/**/index.md</code>銆?瀵瑰悓涓€绡囧崥瀹紙鍚屼竴 post path锛夛紝<strong>浼樺厛鐢ㄤ腑鏂囩増</strong>锛岃嫳鏂囩増鍙湁涓枃涓嶅瓨鍦ㄦ椂鎵嶅叆搴撯€斺€旇繖鏄负浜嗘帶鍒剁煡璇嗗簱浣撶Н锛岄伩鍏嶅弻璇噸澶嶅唴瀹归兘杩涚储寮曘€?/div>
+
+<h2 id="quiz">娴嬮獙</h2>
+
+<div class="quiz" id="quiz2">
+<h3>娴嬮獙 路 鎽勫叆娴佹按绾?/h3>
+<p style="font-size:0.85rem;color:var(--muted);">姣忛鐐归€夌瓟妗堬紝浼氱珛鍒诲憡璇変綘瀵归敊骞剁粰鍑鸿В閲娿€?/p>
+
+<div class="q">1. markdownToPlain 涓轰粈涔堝厛娓叉煋鎴?HTML 鍐嶅墺鏍囩锛?/div>
+<div class="options">
+  <button class="opt" data-correct="false" data-explain="embedding 妯″瀷纭疄瑕佺函鏂囨湰锛屼絾闂闂殑鏄?涓轰粈涔堢敤涓ゆ'銆?>涓轰簡淇濈暀 Markdown 璇硶缁欐ā鍨嬬湅</button>
+  <button class="opt" data-correct="true" data-explain="鍊?MarkdownIt 鐨勬覆鏌撹兘鍔涚粺涓€澶勭悊璇硶锛屽啀鍓ユ帀 HTML 鏍囩寰楀埌绾枃鏈紝鐪佸幓鎵嬪啓瑙ｆ瀽銆?>澶嶇敤鐜版垚瑙ｆ瀽鍣紝鍐嶅墺鏍囩寰楃函鏂囨湰</button>
+  <button class="opt" data-correct="false" data-explain="姝ｅソ鐩稿弽锛欻TML 鏍囩鏄櫔澹帮紝瑕佸厛鍓ユ帀銆?>HTML 姣?Markdown 鏇撮€傚悎 embedding</button>
+  <button class="opt" data-correct="false" data-explain="骞朵笉鏄紝瀹冨疄闄呮槸杞垚 HTML 鍐嶅墺鏍囩銆?>鐩存帴瀛楃涓叉浛鎹㈡帀 # 鍙峰拰鏄熷彿</button>
+</div>
+<div class="feedback"><span class="verdict"></span><span class="detail"></span></div>
+
+<div class="q">2. chunkText 閲岀殑 (?&lt;=...) 鏄粈涔堬紵</div>
+<div class="options">
+  <button class="opt" data-correct="false" data-explain="姝ｇ浉鍙嶏細瀹冩槸鍚庤鏂█锛屽尮閰嶆爣鐐?鍚庨潰'鐨勪綅缃€?>鍏堣鏂█锛屽尮閰嶆爣鐐逛箣鍓嶇殑浣嶇疆</button>
+  <button class="opt" data-correct="true" data-explain="鍚庤鏂█锛氬湪涓枃鏍囩偣鍚庨潰鍒囧紑锛屼絾涓嶆秷璐规爣鐐癸紝鍙ュ瓙杈圭晫涓嶇牬鍧忋€?>鍚庤鏂█锛屽湪鏍囩偣鍚庡垏涓斾笉鍚炴帀鏍囩偣</button>
+  <button class="opt" data-correct="false" data-explain="瀹冩槸姝ｅ垯锛屼笉鏄嚱鏁拌皟鐢ㄣ€?>涓€涓妸瀛楃涓插彉鏁扮粍鐨勫嚱鏁?/button>
+  <button class="opt" data-correct="false" data-explain="瀹冨垏鐨勬槸鏍囩偣杈圭晫锛屽拰 URL 鏃犲叧銆?>鐢ㄦ潵鍖归厤 URL 鐨勬鍒欑墖娈?/button>
+</div>
+<div class="feedback"><span class="verdict"></span><span class="detail"></span></div>
+
+<div class="q">3. Gemini 鍜?Qwen 鍦?embedding 涓婃渶澶х殑鍖哄埆鏄紵</div>
+<div class="options">
+  <button class="opt" data-correct="false" data-explain="鎭版伆鐩稿弽锛孮wen 鏀寔鎵归噺銆佹洿蹇€?>Gemini 鎵归噺宓屽叆锛孮wen 閫愪釜璇锋眰</button>
+  <button class="opt" data-correct="false" data-explain="缁村害閮借瀵归綈 EMBED_DIM锛屾病鏈?涓嶅悓'銆?>Gemini 鐢?768 缁达紝Qwen 鐢?1024 缁?/button>
+  <button class="opt" data-correct="true" data-explain="Gemini 涓嶆敮鎸佹壒閲忓彧鑳介€愭潯锛孮wen 鏀寔姣忔壒鏈€澶?10 鏉★紝鎵€浠ュ苟鍙戠瓥鐣ヤ笉鍚屻€?>Gemini 涓嶆敮鎸佹壒閲忥紝Qwen 鏀寔鎵归噺</button>
+  <button class="opt" data-correct="false" data-explain="涓や釜閮芥敮鎸佹壒閲忥紝杩欎釜宸紓涓嶅瓨鍦ㄣ€?>涓よ€呴兘鏀寔鎵归噺锛屽彧鏄环鏍间笉鍚?/button>
+</div>
+<div class="feedback"><span class="verdict"></span><span class="detail"></span></div>
+
+<div class="q">4. /admin/upsert 鏍￠獙鍚戦噺缁村害澶辫触浼氭€庢牱锛?/div>
+<div class="options">
+  <button class="opt" data-correct="false" data-explain="涓嶆槸 401锛岄偅鏄潈闄愭牎楠岋紱缁村害閿欐槸 500銆?>杩斿洖 401 Unauthorized</button>
+  <button class="opt" data-correct="false" data-explain="涓嶄細鑷姩鎴柇锛岀洿鎺ユ姏閿欍€?>鑷姩鎴柇鍒版纭淮搴﹀啀鍏ュ簱</button>
+  <button class="opt" data-correct="true" data-explain="缁村害涓嶅尮閰嶆椂 Worker 鎶涢敊杩斿洖 500锛岄伩鍏嶈剰鏁版嵁杩涚储寮曘€?>鎶涢敊杩斿洖 500锛屾嫆缁濆啓鍏?/button>
+  <button class="opt" data-correct="false" data-explain="浼氱収鍐欙紝鍙槸璁颁竴鏉℃棩蹇椼€?>鐓у父鍐欏叆骞惰鏃ュ織</button>
+</div>
+<div class="feedback"><span class="verdict"></span><span class="detail"></span></div>
+
+<div class="q">5. 鍚屼竴绡囧崥瀹腑鑻卞弻璇兘鏈夋椂锛宨ngest 榛樿鎬庝箞澶勭悊锛?/div>
+<div class="options">
+  <button class="opt" data-correct="false" data-explain="姝ｅソ鐩稿弽锛氫腑鏂囦紭鍏堬紝鑻辨枃褰撳鑳庛€?>鑻辨枃鐗堜紭鍏堬紝涓枃涓㈠純</button>
+  <button class="opt" data-correct="true" data-explain="榛樿浼樺厛鍏ュ簱涓枃鐗堬紝鑻辨枃鐗堜粎鍦ㄦ棤涓枃鏃跺叆搴擄紝鎺у埗鐭ヨ瘑搴撲綋绉€?>浼樺厛涓枃鐗堬紝鑻辨枃浠呬腑鏂囩己澶辨椂鍏ュ簱</button>
+  <button class="opt" data-correct="false" data-explain="涓や釜鐗堟湰閮藉叆搴擄紝娌℃湁鍘婚噸閫昏緫銆?>涓嫳涓や釜鐗堟湰閮藉畬鏁村叆搴?/button>
+  <button class="opt" data-correct="false" data-explain="鍘婚噸鍙彂鐢熷湪妫€绱㈡椂锛屼笉鍦ㄦ憚鍏ユ椂銆?>涓よ€呴兘鍏ュ簱锛屾绱㈡椂鍐嶅幓閲?/button>
+</div>
+<div class="feedback"><span class="verdict"></span><span class="detail"></span></div>
+</div>
+
+<h3>鏈灏忕粨</h3>
+<ul>
+  <li>鎽勫叆鍥涙锛?strong>绾枃鏈?鈫?鍒?chunk 鈫?鍚戦噺鍖?鈫?鍐欏叆绱㈠紩</strong>锛屽叏閮ㄧ绾挎壒閲忓仛</li>
+  <li>涓枃 chunking 鐨勫阀鎬濓細鍏堟寜鏍囬鍒囪涔夊潡锛屽啀鐢ㄥ悗琛屾柇瑷€鎸変腑鏂囨爣鐐逛繚鍙ュ垏鍒?/li>
+  <li>鍚戦噺缁村害蹇呴』涓庣储寮曚竴鑷达紙EMBED_DIM锛夛紝涓嶄竴鑷翠細琚?/admin/upsert 鎷掔粷</li>
+  <li>provider 宸紓锛圙emini 涓嶆壒閲?vs Qwen 鎵归噺锛夌洿鎺ュ喅瀹氬苟鍙戜笌閫熷害</li>
+</ul>
+
+<footer>
+  <p><strong>鎺ㄨ崘闃呰锛?/strong><a href="https://developers.cloudflare.com/vectorize/get-started/">Cloudflare Vectorize 鈥?Get started</a>锛堢湅 upsert/query 鐨勫畼鏂瑰啓娉曪級銆?/p>
+  <p><strong>缁х画瀛︿範锛?/strong>涓嬩竴璇?<a href="0003-retrieval-generation.html">鏌ヨ娴佹按绾匡細/chat 鐨勫畬鏁存梾绋?/a>锛涙湳璇 <a href="../reference/001-rag-glossary.html">RAG 閫熸煡琛?/a>銆?/p>
+  <p>鏈変换浣曚笉娓呮鐨勫湴鏂癸紝闅忔椂闂綘鐨?AI 鑰佸笀銆?/p>
+</footer>
+
+<script>
+document.querySelectorAll('.quiz').forEach(quiz => {
+  quiz.querySelectorAll('.q').forEach((qEl, idx) => {
+    const options = qEl.nextElementSibling;
+    if (!options || !options.classList.contains('options')) return;
+    const feedback = options.nextElementSibling;
+    const verdict = feedback.querySelector('.verdict');
+    const detail = feedback.querySelector('.detail');
+    options.querySelectorAll('.opt').forEach(opt => {
+      opt.addEventListener('click', () => {
+        options.querySelectorAll('.opt').forEach(o => { o.classList.remove('correct','wrong'); o.disabled = false; });
+        const isCorrect = opt.dataset.correct === 'true';
+        opt.classList.add(isCorrect ? 'correct' : 'wrong');
+        opt.disabled = true;
+        options.querySelectorAll('.opt').forEach(o => { if (o !== opt) o.disabled = true; });
+        verdict.textContent = isCorrect ? '鉁?姝ｇ‘锛? : '鉂?涓嶅銆?;
+        verdict.style.color = isCorrect ? '#166534' : '#b91c1c';
+        detail.textContent = ' ' + opt.dataset.explain;
+        feedback.classList.add('show');
+      });
+    });
+  });
+});
+</script>
+
+<script src="../assets/sidebar.js"></script>
+</body>
+</html>
