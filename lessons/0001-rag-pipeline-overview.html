@@ -3,134 +3,149 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lesson 1 路 RAG 鍏ㄦ祦绋嬫瑙?/title>
+<title>Lesson 1 · RAG 全流程概览</title>
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
 
-<h1>RAG 鍏ㄦ祦绋嬫瑙?/h1>
-<p class="meta" style="font-family:var(--sans);color:var(--muted);font-size:0.9rem;">绗竴璇?路 鏁欏瀵硅薄锛?code>rag-chatbot-fork</code></p>
+<h1>RAG 全流程概览</h1>
+<p class="meta" style="font-family:var(--sans);color:var(--muted);font-size:0.9rem;">第一课 · 教学对象：<code>rag-chatbot-fork</code></p>
 
 <nav class="toc">
-  <strong>鐩綍</strong>
+  <strong>目录</strong>
   <ul>
-    <li><a href="#big-picture">澶у浘鏅細涓€涓?RAG 绯荤粺鍦ㄥ仛浠€涔?/a></li>
-    <li><a href="#two-pipelines">涓ゆ潯娴佹按绾匡細鎽勫叆 vs 鏌ヨ</a></li>
-    <li><a href="#map">浠ｇ爜鍦板浘锛氭枃浠?鈫?闃舵</a></li>
-    <li><a href="#quiz">娴嬮獙</a></li>
+    <li><a href="#big-picture">大图景：一个 RAG 系统在做什么</a></li>
+    <li><a href="#two-pipelines">两条流水线：摄入 vs 查询</a></li>
+    <li><a href="#map">代码地图：文件 ↔ 阶段</a></li>
+    <li><a href="#quiz">测验</a></li>
   </ul>
 </nav>
 
-<h2 id="big-picture">澶у浘鏅細涓€涓?RAG 绯荤粺鍦ㄥ仛浠€涔?/h2>
+<h2 id="big-picture">大图景：一个 RAG 系统在做什么</h2>
 
-<p>浣犲凡缁忕煡閬?RAG = <strong>Retrieval-Augmented Generation</strong>锛堟绱㈠寮虹敓鎴愶級銆傝繖涓粨搴撴槸涓€涓叿浣撶殑銆佽兘璺戠殑瀹炵幇銆傚湪鐪嬩唬鐮佷箣鍓嶏紝鍏堟妸"瀹冨埌搴曞湪瑙ｅ喅浠€涔堥棶棰?鎯虫竻妤氾細</p>
+<p>你已经知道 RAG = <strong>Retrieval-Augmented Generation</strong>（检索增强生成）。这个仓库是一个具体的、能跑的实现。在看代码之前，先把"它到底在解决什么问题"想清楚：</p>
 
-<div class="callout"><strong>鏍稿績闂</strong>
-澶фā鍨嬶紙LLM锛夌殑"鐭ヨ瘑"鏄缁冩椂瀹氭鐨勩€傚鏋滀綘鐨勫崥瀹?鏂囨。鏄鏈夌殑銆佹洿鏂板緢蹇殑锛孡LM 鏍规湰涓嶇煡閬撳畠浠€?RAG 鐨勬€濊矾锛?em>姣忔鎻愰棶鏃讹紝鍏堝埌浣犵殑鐭ヨ瘑搴撻噷妫€绱㈢浉鍏冲唴瀹癸紝鎶婃绱㈠埌鐨勬枃鏈?濉炶繘"鎻愮ず璇嶉噷锛屽啀璁?LLM 鍩轰簬杩欎簺鏂囨湰鍥炵瓟銆?/em> 杩欐牱 LLM 鏃犻渶閲嶆柊璁粌锛屽氨鑳藉洖绛斾綘绉佹湁鐭ヨ瘑搴撻噷鐨勯棶棰橈紝鑰屼笖鑳界粰鍑哄嚭澶勩€?/div>
+<div class="callout"><strong>核心问题</strong>
+大模型（LLM）的"知识"是训练时定死的。如果你的博客/文档是私有的、更新很快的，LLM 根本不知道它们。
+RAG 的思路：<em>每次提问时，先到你的知识库里检索相关内容，把检索到的文本"塞进"提示词里，再让 LLM 基于这些文本回答。</em> 这样 LLM 无需重新训练，就能回答你私有知识库里的问题，而且能给出出处。</div>
 
-<p>杩欎釜浠撳簱鐨勭煡璇嗗簱鏄竴鍫?<strong>Markdown 鏂囩珷</strong>锛圚ugo 鍗氬鐨?<code>content/</code> 鐩綍锛夈€傛暣涓郴缁熻鍥炵瓟鐨勯棶棰樻槸锛?/p>
+<p>这个仓库的知识库是一堆 <strong>Markdown 文章</strong>（Hugo 博客的 <code>content/</code> 目录）。整个系统要回答的问题是：</p>
 
 <blockquote style="border-left:4px solid var(--accent);margin:1em 0;padding-left:1em;">
-  鐢ㄦ埛闂細"鏈嶅姟缃戞牸鐨?sidecar 鏄粈涔堬紵" 鈥斺€?鏈哄櫒浜哄繀椤讳粠杩欎簺 Markdown 鏂囩珷閲屾壘鍒扮浉鍏冲唴瀹癸紝鍩轰簬瀹冧綔绛旓紝骞跺垪鍑哄弬鑰冩潵婧愩€?</blockquote>
+  用户问："服务网格的 sidecar 是什么？" —— 机器人必须从这些 Markdown 文章里找到相关内容，基于它作答，并列出参考来源。
+</blockquote>
 
-<h2 id="two-pipelines">涓ゆ潯娴佹按绾匡細鎽勫叆 vs 鏌ヨ</h2>
+<h2 id="two-pipelines">两条流水线：摄入 vs 查询</h2>
 
-<p>RAG 绯荤粺澶╃劧鍒嗘垚 <strong>绂荤嚎</strong> 鍜?<strong>鍦ㄧ嚎</strong> 涓ゆ潯娴佹按绾匡紝鍒贩鍦ㄤ竴璧凤細</p>
+<p>RAG 系统天然分成 <strong>离线</strong> 和 <strong>在线</strong> 两条流水线，别混在一起：</p>
 
-<div class="diagram">鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ 绂荤嚎 路 鎽勫叆锛坕ngestion锛?鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹?                                                                               鈹?鈹? content/*.md 鈹€鈹€鈻?鎻愬彇绾枃鏈?鈹€鈹€鈻?鍒囧垎鎴?chunk 鈹€鈹€鈻?姣忎釜 chunk 鍚戦噺鍖?鈹€鈹€鈻?鍐欏叆鍚戦噺搴?鈹?鈹?  (Markdown)    (markdownToPlain) (chunkText)      (embedding)    (Vectorize)  鈹?鈹?                                                                               鈹?鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€ 鍦ㄧ嚎 路 鏌ヨ锛坬uery / chat锛?鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹?                                                                               鈹?鈹? 鐢ㄦ埛鎻愰棶 鈹€鈹€鈻?闂鍚戦噺鍖?鈹€鈹€鈻?鍚戦噺搴撴绱?topK 鈹€鈹€鈻?鎷艰繘鎻愮ず璇?鈹€鈹€鈻?LLM 鐢熸垚 鈹€鈹€鈻?鍥炵瓟+鏉ユ簮 鈹?鈹? "message"    (embedding)   (VECTORIZE.query)  (buildPrompt)   (llmGenerate)   鈹?鈹?                                                                               鈹?鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?/div>
+<div class="diagram">┌─────────────────────────── 离线 · 摄入（ingestion） ───────────────────────────┐
+│                                                                                │
+│  content/*.md ──▶ 提取纯文本 ──▶ 切分成 chunk ──▶ 每个 chunk 向量化 ──▶ 写入向量库 │
+│   (Markdown)    (markdownToPlain) (chunkText)      (embedding)    (Vectorize)  │
+│                                                                                │
+└────────────────────────────────────────────────────────────────────────────────┘
 
-<p>鍏抽敭璁よ瘑锛?strong>鎽勫叆鍙仛涓€娆?瀹氭湡鍋氾紝鏌ヨ姣忔璇锋眰閮藉仛</strong>銆傛憚鍏ユ參涓€鐐规棤鎵€璋擄紙瀹冧笉闃诲鐢ㄦ埛锛夛紝鏌ヨ蹇呴』蹇紙鐢ㄦ埛鍦ㄧ瓑锛夈€傝繖涔熸槸涓轰粈涔堜粨搴撻噷 `ingest` 鑴氭湰涓撻棬鍋氫簡澶ч噺骞跺彂浼樺寲锛岃€?`/chat` 澶勭悊瑕佽交閲忋€?/p>
+┌─────────────────────────── 在线 · 查询（query / chat） ─────────────────────────┐
+│                                                                                │
+│  用户提问 ──▶ 问题向量化 ──▶ 向量库检索 topK ──▶ 拼进提示词 ──▶ LLM 生成 ──▶ 回答+来源 │
+│  "message"    (embedding)   (VECTORIZE.query)  (buildPrompt)   (llmGenerate)   │
+│                                                                                │
+└────────────────────────────────────────────────────────────────────────────────┘</div>
 
-<div class="callout--tip callout"><strong>涓轰粈涔堟槸"鍚戦噺"锛?/strong>
-璁＄畻鏈烘病娉曠洿鎺ュ垽鏂?鏈嶅姟缃戞牸鐨?sidecar"鍜屽摢绡囨枃绔?鐩稿叧"銆俥mbedding 妯″瀷鎶婁竴娈垫枃瀛楀彉鎴愪竴涓珮缁村悜閲忥紙杩欎釜浠撳簱閲屾槸 768 鎴?1024 缁寸殑鏁板瓧鏁扮粍锛夛紝
-璇箟鐩歌繎鐨勬枃瀛楋紝鍏跺悜閲忓湪绌洪棿閲屼篃鐩歌繎銆備簬鏄?鐩稿叧"琚炕璇戞垚浜?鍚戦噺璺濈杩?锛屽彲浠ョ敤鏁板锛堜綑寮︾浉浼煎害锛夋潵妫€绱€?浣犲凡鏈夎繖涓蹇碉紝杩欓噷鍙彁閱掞細<em>妫€绱㈠拰鍥炵瓟鐢ㄧ殑鏄悓涓€涓悜閲忕┖闂达紝鍙槸瑙掕壊涓嶅悓銆?/em></div>
+<p>关键认识：<strong>摄入只做一次/定期做，查询每次请求都做</strong>。摄入慢一点无所谓（它不阻塞用户），查询必须快（用户在等）。这也是为什么仓库里 `ingest` 脚本专门做了大量并发优化，而 `/chat` 处理要轻量。</p>
 
-<h2 id="map">浠ｇ爜鍦板浘锛氭枃浠?鈫?闃舵</h2>
+<div class="callout--tip callout"><strong>为什么是"向量"？</strong>
+计算机没法直接判断"服务网格的 sidecar"和哪篇文章"相关"。embedding 模型把一段文字变成一个高维向量（这个仓库里是 768 或 1024 维的数字数组），
+语义相近的文字，其向量在空间里也相近。于是"相关"被翻译成了"向量距离近"，可以用数学（余弦相似度）来检索。
+你已有这个概念，这里只提醒：<em>检索和回答用的是同一个向量空间，只是角色不同。</em></div>
 
-<p>鏁翠釜浠撳簱寰堝皬锛岀粨鏋勯潪甯告竻鏅般€傝浣忚繖寮犲湴鍥撅紝鍚庨潰涓よ妭璇惧氨鏄€愬眰娣卞叆锛?/p>
+<h2 id="map">代码地图：文件 ↔ 阶段</h2>
+
+<p>整个仓库很小，结构非常清晰。记住这张地图，后面两节课就是逐层深入：</p>
 
 <table style="width:100%;border-collapse:collapse;font-family:var(--sans);font-size:0.92rem;">
-  <tr style="border-bottom:2px solid var(--ink);"><th style="text-align:left;padding:0.4em;">鏂囦欢</th><th style="text-align:left;padding:0.4em;">灞炰簬鍝潯绾?/th><th style="text-align:left;padding:0.4em;">璐熻矗浠€涔?/th></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.4em;"><code>src/worker.ts</code></td><td>鏌ヨ绾垮叆鍙?/td><td>鏁翠釜 Worker锛屾墍鏈?HTTP 璺敱锛?chat銆?admin/*銆?widget.js锛?/td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.4em;"><code>src/providers/embeddings.ts</code></td><td>涓ゆ潯绾垮叡鐢?/td><td>鎶婃枃瀛楀彉鍚戦噺鐨?embedder"锛屾敮鎸?Gemini / Qwen</td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.4em;"><code>src/providers/llm.ts</code></td><td>鏌ヨ绾?/td><td>璋?LLM 鐢熸垚鍥炵瓟锛屽悓鏍锋敮鎸?Gemini / Qwen</td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.4em;"><code>src/rag/chunk.ts</code></td><td>鎽勫叆绾?/td><td>鎶婇暱鏂囨湰鍒囨垚涓€鑺傝妭 chunk锛堜腑鏂囧弸濂斤級</td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.4em;"><code>src/rag/retriever.ts</code></td><td>鏌ヨ绾?/td><td>鍚戦噺妫€绱?+ 璇█杩囨护 + 缁勮涓婁笅鏂?鏉ユ簮</td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.4em;"><code>src/rag/prompt.ts</code></td><td>鏌ヨ绾?/td><td>鎶婇棶棰?妫€绱㈢粨鏋?鍘嗗彶鎷兼垚缁?LLM 鐨勬彁绀鸿瘝</td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.4em;"><code>src/utils/md.ts</code></td><td>鎽勫叆绾?/td><td>Markdown 鈫?绾枃鏈?/td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.4em;"><code>src/utils/schema.ts</code></td><td>鍏叡</td><td>绫诲瀷瀹氫箟锛欵nv锛堢幆澧冨彉閲忥級銆乂ectorize 鎺ュ彛</td></tr>
-  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.4em;"><code>scripts/ingest.ts</code></td><td>鎽勫叆绾匡紙鏈湴鑴氭湰锛?/td><td>鎵?Markdown 鈫?澶勭悊 鈫?鎵归噺涓婁紶鍒?Worker</td></tr>
-  <tr><td style="padding:0.4em;"><code>wrangler.toml</code></td><td>閮ㄧ讲閰嶇疆</td><td>Worker 鍚嶃€乂ECTORIZE 缁戝畾銆佹ā鍨?缁村害閰嶇疆</td></tr>
+  <tr style="border-bottom:2px solid var(--ink);"><th style="text-align:left;padding:0.4em;">文件</th><th style="text-align:left;padding:0.4em;">属于哪条线</th><th style="text-align:left;padding:0.4em;">负责什么</th></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.4em;"><code>src/worker.ts</code></td><td>查询线入口</td><td>整个 Worker，所有 HTTP 路由（/chat、/admin/*、/widget.js）</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.4em;"><code>src/providers/embeddings.ts</code></td><td>两条线共用</td><td>把文字变向量的"embedder"，支持 Gemini / Qwen</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.4em;"><code>src/providers/llm.ts</code></td><td>查询线</td><td>调 LLM 生成回答，同样支持 Gemini / Qwen</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.4em;"><code>src/rag/chunk.ts</code></td><td>摄入线</td><td>把长文本切成一节节 chunk（中文友好）</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.4em;"><code>src/rag/retriever.ts</code></td><td>查询线</td><td>向量检索 + 语言过滤 + 组装上下文/来源</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.4em;"><code>src/rag/prompt.ts</code></td><td>查询线</td><td>把问题+检索结果+历史拼成给 LLM 的提示词</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.4em;"><code>src/utils/md.ts</code></td><td>摄入线</td><td>Markdown → 纯文本</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.4em;"><code>src/utils/schema.ts</code></td><td>公共</td><td>类型定义：Env（环境变量）、Vectorize 接口</td></tr>
+  <tr style="border-bottom:1px solid var(--rule);"><td style="padding:0.4em;"><code>scripts/ingest.ts</code></td><td>摄入线（本地脚本）</td><td>扫 Markdown → 处理 → 批量上传到 Worker</td></tr>
+  <tr><td style="padding:0.4em;"><code>wrangler.toml</code></td><td>部署配置</td><td>Worker 名、VECTORIZE 绑定、模型/维度配置</td></tr>
 </table>
 
-<div class="callout"><strong>涓€涓槗娣风偣锛歩ngest 鑴氭湰涓嶅湪 Worker 閲岃窇</strong>
-鎽勫叆鑴氭湰锛坄scripts/ingest.ts`锛夋槸<em>鏈湴</em>璺戠殑鍛戒护琛屽伐鍏凤紙鐢?<code>tsx</code> 杩愯锛夈€傚畠鎶婂鐞嗗ソ鐨勫悜閲?<code>POST</code> 鍒板凡閮ㄧ讲 Worker 鐨?<code>/admin/upsert</code> 绔偣锛岀敱 Worker 鍐嶅啓鍏?Cloudflare Vectorize銆傝繖鏍疯璁℃槸涓轰簡璁╂憚鍏ヤ换鍔′笉鍗犵敤 Worker 鐨勮繍琛屾椂闀块厤棰濄€?/div>
+<div class="callout"><strong>一个易混点：ingest 脚本不在 Worker 里跑</strong>
+摄入脚本（`scripts/ingest.ts`）是<em>本地</em>跑的命令行工具（用 <code>tsx</code> 运行）。它把处理好的向量 <code>POST</code> 到已部署 Worker 的
+<code>/admin/upsert</code> 端点，由 Worker 再写入 Cloudflare Vectorize。这样设计是为了让摄入任务不占用 Worker 的运行时长配额。</div>
 
-<h2 id="quiz">娴嬮獙</h2>
+<h2 id="quiz">测验</h2>
 
 <div class="quiz" id="quiz1">
-<h3>娴嬮獙 路 RAG 鍏ㄦ祦绋嬫瑙?/h3>
-<p style="font-size:0.85rem;color:var(--muted);">姣忛鐐归€夌瓟妗堬紝浼氱珛鍒诲憡璇変綘瀵归敊骞剁粰鍑鸿В閲娿€?/p>
+<h3>测验 · RAG 全流程概览</h3>
+<p style="font-size:0.85rem;color:var(--muted);">每题点选答案，会立刻告诉你对错并给出解释。</p>
 
-<div class="q">1. 鍦ㄦ憚鍏ユ祦姘寸嚎涓紝涓嬮潰鍝竴姝ョ殑姝ｇ‘椤哄簭鏄紵</div>
+<div class="q">1. 在摄入流水线中，下面哪一步的正确顺序是？</div>
 <div class="options">
-  <button class="opt" data-correct="true" data-explain="鎽勫叆椤哄簭鍥哄畾涓猴細Markdown鈫掔函鏂囨湰鈫掑垏鍒嗏啋鍚戦噺鍖栤啋鍐欏叆绱㈠紩銆?>绾枃鏈彁鍙?鈫?鍒囧垎 鈫?鍚戦噺鍖?鈫?鍐欏叆</button>
-  <button class="opt" data-correct="false" data-explain="鍏堟彁鍙栫函鏂囨湰鍐嶅垏鍒嗭紝鍒囧垎鍓嶄笉鍙兘鍚戦噺鍖栵紝椤哄簭閿欎簡銆?>鍚戦噺鍖?鈫?绾枃鏈彁鍙?鈫?鍒囧垎 鈫?鍐欏叆</button>
-  <button class="opt" data-correct="false" data-explain="鍐欏叆绱㈠紩鍙戠敓鍦ㄥ悜閲忓寲涔嬪悗锛屾槸鏈€鍚庝竴姝ワ紝涓嶆槸绗竴姝ャ€?>鍐欏叆绱㈠紩 鈫?鍚戦噺鍖?鈫?鍒囧垎 鈫?绾枃鏈?/button>
-  <button class="opt" data-correct="false" data-explain="鍐欏叆鏄粓鐐癸紝鍒囧垎鍦ㄥ悜閲忓寲涔嬪墠銆?>鍒囧垎 鈫?鍐欏叆 鈫?鍚戦噺鍖?鈫?绾枃鏈?/button>
+  <button class="opt" data-correct="true" data-explain="摄入顺序固定为：Markdown→纯文本→切分→向量化→写入索引。">纯文本提取 → 切分 → 向量化 → 写入</button>
+  <button class="opt" data-correct="false" data-explain="先提取纯文本再切分，切分前不可能向量化，顺序错了。">向量化 → 纯文本提取 → 切分 → 写入</button>
+  <button class="opt" data-correct="false" data-explain="写入索引发生在向量化之后，是最后一步，不是第一步。">写入索引 → 向量化 → 切分 → 纯文本</button>
+  <button class="opt" data-correct="false" data-explain="写入是终点，切分在向量化之前。">切分 → 写入 → 向量化 → 纯文本</button>
 </div>
 <div class="feedback"><span class="verdict"></span><span class="detail"></span></div>
 
-<div class="q">2. 涓轰粈涔堟憚鍏ヨ剼鏈鍋氬ぇ閲忓苟鍙戜紭鍖栵紝鑰?/chat 涓嶈繖涔堝仛锛?/div>
+<div class="q">2. 为什么摄入脚本要做大量并发优化，而 /chat 不这么做？</div>
 <div class="options">
-  <button class="opt" data-correct="false" data-explain="鎽勫叆纭疄绂荤嚎銆佸彲浠ユ參锛屼絾骞跺彂浼樺寲鍙︽湁鍘熷洜锛氭憚鍏ヨ澶勭悊鎴愮櫨涓婂崈鏂囦欢锛屽悶鍚愪紭鍏堛€?>鍥犱负鎽勫叆涓嶈兘骞跺彂锛屽彧鑳戒覆琛?/button>
-  <button class="opt" data-correct="true" data-explain="鎽勫叆绂荤嚎璺戙€佽澶勭悊娴烽噺鏂囦欢锛屾墍浠ヨ拷姹傚悶鍚愶紱/chat 鏄敤鎴峰湪绾跨瓑寰呯殑锛岃杞婚噺蹇€熴€?>鎽勫叆绂荤嚎涓旈噺澶э紝鏌ヨ瑕佸嵆鏃跺搷搴?/button>
-  <button class="opt" data-correct="false" data-explain="鎭版伆鐩稿弽锛?chat 姣忔璇锋眰閮借鍋氭绱?鐢熸垚锛屾憚鍏ユ槸鎵归噺鐨勩€?>鏌ヨ閲忔瘮鎽勫叆閲忓ぇ寰楀锛屾墠璇ュ苟鍙?/button>
-  <button class="opt" data-correct="false" data-explain="涓ゅ浠ｇ爜纭疄閮借皟浜?embedding锛屼絾杩欎笉鏄苟鍙戝彇鑸嶇殑鍘熷洜銆?>涓よ竟閮借皟 embedding锛屾墍浠ラ兘瑕佸苟鍙?/button>
+  <button class="opt" data-correct="false" data-explain="摄入确实离线、可以慢，但并发优化另有原因：摄入要处理成百上千文件，吞吐优先。">因为摄入不能并发，只能串行</button>
+  <button class="opt" data-correct="true" data-explain="摄入离线跑、要处理海量文件，所以追求吞吐；/chat 是用户在线等待的，要轻量快速。">摄入离线且量大，查询要即时响应</button>
+  <button class="opt" data-correct="false" data-explain="恰恰相反：/chat 每次请求都要做检索+生成，摄入是批量的。">查询量比摄入量大得多，才该并发</button>
+  <button class="opt" data-correct="false" data-explain="两处代码确实都调了 embedding，但这不是并发取舍的原因。">两边都调 embedding，所以都要并发</button>
 </div>
 <div class="feedback"><span class="verdict"></span><span class="detail"></span></div>
 
-<div class="q">3. 鍏充簬 /admin/upsert 鍜?Vectorize锛屾纭殑鏄紵</div>
+<div class="q">3. 关于 /admin/upsert 和 Vectorize，正确的是？</div>
 <div class="options">
-  <button class="opt" data-correct="false" data-explain="鍙嶄簡锛氭湰鍦?ingest 鑴氭湰 POST 缁?Worker锛學orker 鍐嶅啓 Vectorize銆?>Vectorize 鐩存帴璇绘湰鍦?Markdown 鏂囦欢</button>
-  <button class="opt" data-correct="false" data-explain="upsert 鍦?Worker 鍐呮墽琛岋紝鑴氭湰鍙槸鎶婃暟鎹€佽繃鏉ャ€?>/admin/upsert 鐢辨祻瑙堝櫒鐩存帴璋冪敤</button>
-  <button class="opt" data-correct="true" data-explain="ingest 鑴氭湰鎶婂悜閲?POST 鍒?/admin/upsert锛學orker 鏍￠獙鍚庤皟鐢?VECTORIZE.upsert 鍐欏叆銆?>鑴氭湰鎶婂悜閲忓彂缁?Worker锛學orker 鍐欏叆鍚戦噺搴?/button>
-  <button class="opt" data-correct="false" data-explain="鍚戦噺涓嶅湪 /chat 鏃剁敓鎴愶紝鑰屾槸鎽勫叆闃舵灏辩敓鎴愬ソ浜嗗瓨璧锋潵銆?>鍚戦噺鍦ㄦ瘡娆?/chat 璇锋眰鏃舵墠閲嶆柊鐢熸垚</button>
+  <button class="opt" data-correct="false" data-explain="反了：本地 ingest 脚本 POST 给 Worker，Worker 再写 Vectorize。">Vectorize 直接读本地 Markdown 文件</button>
+  <button class="opt" data-correct="false" data-explain="upsert 在 Worker 内执行，脚本只是把数据送过来。">/admin/upsert 由浏览器直接调用</button>
+  <button class="opt" data-correct="true" data-explain="ingest 脚本把向量 POST 到 /admin/upsert，Worker 校验后调用 VECTORIZE.upsert 写入。">脚本把向量发给 Worker，Worker 写入向量库</button>
+  <button class="opt" data-correct="false" data-explain="向量不在 /chat 时生成，而是摄入阶段就生成好了存起来。">向量在每次 /chat 请求时才重新生成</button>
 </div>
 <div class="feedback"><span class="verdict"></span><span class="detail"></span></div>
 
-<div class="q">4. 鐢ㄦ埛鎻愰棶鏃讹紝涓嬮潰鍝竴椤规槸 /chat 鐪熸浼氬仛鐨勪簨锛?/div>
+<div class="q">4. 用户提问时，下面哪一项是 /chat 真正会做的事？</div>
 <div class="options">
-  <button class="opt" data-correct="false" data-explain="妫€绱㈠彂鐢熷湪鐢熸垚涔嬪墠锛屾潵婧愭槸妫€绱㈢殑鍓骇鍝併€?>鍏堣 LLM 鍥炵瓟锛屽啀鍥炲ご鎵炬潵婧?/button>
-  <button class="opt" data-correct="false" data-explain="鎽勫叆鎵嶆壂鎻?Markdown锛屾煡璇㈡椂鏁版嵁宸插悜閲忓寲鍏ュ簱銆?>鍏堟壂鎻忓叏閮?Markdown 鍐嶆壘绛旀</button>
-  <button class="opt" data-correct="true" data-explain="闂鍚戦噺鍖栤啋鍚戦噺妫€绱?topK鈫掓嫾鎻愮ず璇嶁啋LLM 鐢熸垚锛屽叏绋嬩笉纰板師濮?Markdown銆?>闂鍚戦噺鍖栧悗妫€绱紝鍐嶆嫾鎻愮ず璇嶇敓鎴?/button>
-  <button class="opt" data-correct="false" data-explain="姣忔璇锋眰鏃犻渶閲嶅缓绱㈠紩锛岀储寮曞湪鎽勫叆闃舵寤哄ソ銆?>姣忔璇锋眰閲嶆柊鍚戦噺鍖栨暣涓煡璇嗗簱</button>
+  <button class="opt" data-correct="false" data-explain="检索发生在生成之前，来源是检索的副产品。">先让 LLM 回答，再回头找来源</button>
+  <button class="opt" data-correct="false" data-explain="摄入才扫描 Markdown，查询时数据已向量化入库。">先扫描全部 Markdown 再找答案</button>
+  <button class="opt" data-correct="true" data-explain="问题向量化→向量检索 topK→拼提示词→LLM 生成，全程不碰原始 Markdown。">问题向量化后检索，再拼提示词生成</button>
+  <button class="opt" data-correct="false" data-explain="每次请求无需重建索引，索引在摄入阶段建好。">每次请求重新向量化整个知识库</button>
 </div>
 <div class="feedback"><span class="verdict"></span><span class="detail"></span></div>
 
-<div class="q">5. 涓嬪垪鍝釜鏂囦欢灞炰簬"鎽勫叆绾?鑰屼笉鏄?鏌ヨ绾?锛?/div>
+<div class="q">5. 下列哪个文件属于"摄入线"而不是"查询线"？</div>
 <div class="options">
-  <button class="opt" data-correct="false" data-explain="retriever 鍦?/chat 鏃舵绱紝灞炰簬鏌ヨ绾裤€?>src/rag/retriever.ts</button>
-  <button class="opt" data-correct="true" data-explain="chunk.ts 鎶?Markdown 鍒囧潡锛屽彧鍦ㄦ憚鍏ユ椂浣跨敤锛屽睘浜庢憚鍏ョ嚎銆?>src/rag/chunk.ts</button>
-  <button class="opt" data-correct="false" data-explain="prompt.ts 缁勮缁?LLM 鐨勬彁绀鸿瘝锛屽睘浜庢煡璇㈢嚎銆?>src/rag/prompt.ts</button>
-  <button class="opt" data-correct="false" data-explain="llm.ts 鍦?/chat 鐢熸垚鍥炵瓟锛屽睘浜庢煡璇㈢嚎銆?>src/providers/llm.ts</button>
+  <button class="opt" data-correct="false" data-explain="retriever 在 /chat 时检索，属于查询线。">src/rag/retriever.ts</button>
+  <button class="opt" data-correct="true" data-explain="chunk.ts 把 Markdown 切块，只在摄入时使用，属于摄入线。">src/rag/chunk.ts</button>
+  <button class="opt" data-correct="false" data-explain="prompt.ts 组装给 LLM 的提示词，属于查询线。">src/rag/prompt.ts</button>
+  <button class="opt" data-correct="false" data-explain="llm.ts 在 /chat 生成回答，属于查询线。">src/providers/llm.ts</button>
 </div>
 <div class="feedback"><span class="verdict"></span><span class="detail"></span></div>
 </div>
 
-<h3>鏈灏忕粨</h3>
+<h3>本课小结</h3>
 <ul>
-  <li>RAG = 鎻愰棶鏃跺厛妫€绱㈢鏈夌煡璇嗗簱锛屾妸鐩稿叧鍐呭濉炶繘鎻愮ず璇嶏紝鍐嶈 LLM 浣滅瓟</li>
-  <li>绯荤粺鍒?<strong>绂荤嚎鎽勫叆</strong>锛圡arkdown鈫掓枃鏈啋chunk鈫掑悜閲忊啋鍏ュ簱锛夊拰 <strong>鍦ㄧ嚎鏌ヨ</strong>锛堥棶棰樷啋鍚戦噺鈫掓绱⑩啋鎻愮ず璇嶁啋鐢熸垚锛変袱鏉＄嚎</li>
-  <li>鎽勫叆鎵归噺銆佺绾裤€佽拷姹傚悶鍚愶紱鏌ヨ鍗曟銆佸湪绾裤€佽拷姹傞€熷害</li>
-  <li>鎽勫叆鑴氭湰閫氳繃 Worker 鐨?<code>/admin/upsert</code> 鍐欏悜閲忓簱锛屼笉鐩存帴璇?Markdown</li>
+  <li>RAG = 提问时先检索私有知识库，把相关内容塞进提示词，再让 LLM 作答</li>
+  <li>系统分 <strong>离线摄入</strong>（Markdown→文本→chunk→向量→入库）和 <strong>在线查询</strong>（问题→向量→检索→提示词→生成）两条线</li>
+  <li>摄入批量、离线、追求吞吐；查询单次、在线、追求速度</li>
+  <li>摄入脚本通过 Worker 的 <code>/admin/upsert</code> 写向量库，不直接读 Markdown</li>
 </ul>
 
 <footer>
-  <p><strong>鎺ㄨ崘闃呰锛?/strong><a href="https://blogs.nvidia.com/blog/what-is-retrieval-augmented-generation/">What Is Retrieval-Augmented Generation? (NVIDIA)</a> 鈥斺€?鎶?RAG 涓轰粈涔堝瓨鍦ㄣ€佹€庝箞宸ヤ綔璁插緱鏈€娓呮鐨勪竴绡囧叆闂ㄣ€?/p>
-  <p><strong>缁х画瀛︿範锛?/strong>涓嬩竴璇?<a href="0002-ingestion-pipeline.html">鎽勫叆娴佹按绾匡細浠?Markdown 鍒板悜閲忓簱</a>锛涙湳璇 <a href="../reference/001-rag-glossary.html">RAG 閫熸煡琛?/a>銆?/p>
-  <p>鏈変换浣曚笉娓呮鐨勫湴鏂癸紝闅忔椂闂綘鐨?AI 鑰佸笀 鈥斺€?瀹冨氨鏄繖涓」鐩唬鐮佺殑娲诲湴鍥俱€?/p>
+  <p><strong>推荐阅读：</strong><a href="https://blogs.nvidia.com/blog/what-is-retrieval-augmented-generation/">What Is Retrieval-Augmented Generation? (NVIDIA)</a> —— 把 RAG 为什么存在、怎么工作讲得最清楚的一篇入门。</p>
+  <p><strong>继续学习：</strong>下一课 <a href="0002-ingestion-pipeline.html">摄入流水线：从 Markdown 到向量库</a>；术语见 <a href="../reference/001-rag-glossary.html">RAG 速查表</a>。</p>
+  <p>有任何不清楚的地方，随时问你的 AI 老师 —— 它就是这个项目代码的活地图。</p>
 </footer>
 
 <script>
@@ -148,7 +163,7 @@ document.querySelectorAll('.quiz').forEach(quiz => {
         opt.classList.add(isCorrect ? 'correct' : 'wrong');
         opt.disabled = true;
         options.querySelectorAll('.opt').forEach(o => { if (o !== opt) o.disabled = true; });
-        verdict.textContent = isCorrect ? '鉁?姝ｇ‘锛? : '鉂?涓嶅銆?;
+        verdict.textContent = isCorrect ? '✅ 正确！' : '❌ 不对。';
         verdict.style.color = isCorrect ? '#166534' : '#b91c1c';
         detail.textContent = ' ' + opt.dataset.explain;
         feedback.classList.add('show');
