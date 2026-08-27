@@ -10,11 +10,11 @@
   })();
 
   var ITEMS = [
-    { id: 'home', file: 'index.html', tag: '鈱?, ref: false, title: '璇剧▼涓婚〉', count: false },
-    { id: '0001', file: 'lessons/0001-rag-pipeline-overview.html', tag: '鈶?, ref: false, title: '鍏ㄦ祦绋嬫瑙?, count: true },
-    { id: '0002', file: 'lessons/0002-ingestion-pipeline.html', tag: '鈶?, ref: false, title: '鎽勫叆娴佹按绾?, count: true },
-    { id: '0003', file: 'lessons/0003-retrieval-generation.html', tag: '鈶?, ref: false, title: '鏌ヨ娴佹按绾?, count: true },
-    { id: 'ref', file: 'reference/001-rag-glossary.html', tag: 'R', ref: true, title: '閫熸煡琛?, count: false }
+    { id: 'home', file: 'index.html', tag: '⌂', ref: false, title: '课程主页', count: false },
+    { id: '0001', file: 'lessons/0001-rag-pipeline-overview.html', tag: '①', ref: false, title: '全流程概览', count: true },
+    { id: '0002', file: 'lessons/0002-ingestion-pipeline.html', tag: '②', ref: false, title: '摄入流水线', count: true },
+    { id: '0003', file: 'lessons/0003-retrieval-generation.html', tag: '③', ref: false, title: '查询流水线', count: true },
+    { id: 'ref', file: 'reference/001-rag-glossary.html', tag: 'R', ref: true, title: '速查表', count: false }
   ];
 
   var current = location.pathname.split('/').pop() || 'index.html';
@@ -45,14 +45,14 @@
   var nav = document.createElement('nav');
   nav.className = 'sidebar';
   nav.innerHTML =
-    '<div class="brand">馃摎 RAG 鍘熺悊璇剧▼</div>' +
-    '<div class="sub">妗堜緥 路 rag-chatbot-fork</div>' +
+    '<div class="brand">📚 RAG 原理课程</div>' +
+    '<div class="sub">案例 · rag-chatbot-fork</div>' +
     '<div class="progress-bar"><div class="fill" style="width:' + pct + '%"></div></div>' +
-    '<div class="progress-label">闃舵杩涘害 ' + done + '/' + lessons.length + '</div>' +
+    '<div class="progress-label">阶段进度 ' + done + '/' + lessons.length + '</div>' +
     ITEMS.map(function (i) {
       var isCurrent = i.file.split('/').pop() === current;
       var cls = 'item' + (isCurrent ? ' active' : '');
-      var check = (i.count && visited[i.id]) ? '<span class="check">鉁?/span>' : '';
+      var check = (i.count && visited[i.id]) ? '<span class="check">✓</span>' : '';
       return '<a class="' + cls + '" href="' + ROOT + i.file + '">' +
              '<span class="tag' + (i.ref ? ' ref' : '') + '">' + i.tag + '</span>' +
              '<span class="lbl">' + i.title + '</span>' + check + '</a>';
