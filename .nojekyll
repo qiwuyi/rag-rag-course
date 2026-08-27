@@ -1,1 +1,1 @@
-# 閮ㄧ讲鍒?Cloudflare Pages 鏃跺拷鐣?Jekyll 澶勭悊锛堥伩鍏?_ 寮€澶寸殑鐩綍/鏂囦欢琚烦杩囷級
+# 部署到 Cloudflare Pages 时忽略 Jekyll 处理（避免 _ 开头的目录/文件被跳过）
